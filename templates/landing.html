@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	<meta http-equiv="cache-control" content="no-cache" />
+	<title>Chatzilla</title>
+</head>
+<body>
+	<header>
+		<h1>Welcome to Chatzilla</h1>
+	</header>
+	<footer>
+	</footer>
+
+	<script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+	<script src="{{ url_for('static', filename='scripts/socket.io.min.js') }}"></script>
+	<script>
+		$(function(){
+			console.log("Welcome to Chatzilla");
+			var socket = io.connect('/chat');
+			socket.on('connect', function () {
+				socket.emit('join', 'Bob', function(joined, name){
+					socket.emit('message', 'hello this is ' + name, function(sent){
+						console.log("message sent: ", sent);
+					});
+				});
+			});
+
+			socket.on('message', function(message){
+				alert("got a message: " + message);
+			});
+		});
+	</script>
+</body>
+</html>
