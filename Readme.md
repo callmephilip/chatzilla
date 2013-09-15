@@ -5,7 +5,7 @@
 We will be building a realtime chat application using Flask, a popular micro web framework and socket.io. All of this running on Heroku   
 
 
-### Getting started 
+## Chapter 1: Getting started 
 
 I assume you know what Heroku is and you've seen Python before. Prior knowledge of Flask is a plus but given how minimalistic it is, you can just tag along.  
 
@@ -170,3 +170,226 @@ This should keep Heroku busy for a few moments. Once it's done processing the pu
 ```
 heroku open
 ```
+
+### Before you panick
+
+Just in case you are stuck/confused/lazy, you can grab all the code we've produced so far [here](https://github.com/callmephilip/chatzilla/releases/tag/v0.1) and keep following along.  
+
+
+## Chapter 2: Sockets, por favor
+
+### Wire a namespace
+
+We currently have a socket.io endpoint exposed to the world and we should start handling various events that will get triggered once people start using it. Head to chatzilla.py and add the following:
+
+```
+@application.route('/socket.io/<path:remaining>')
+def socketio(remaining):
+    try:
+        socketio_manage(request.environ, {'/chat': ChatNamespace}, request)
+    except:
+        application.logger.error("Exception while handling socketio connection",
+                         exc_info=True)
+    return Response()
+
+```  
+
+Also update import statements on the top of the module: 
+
+```
+from flask import Flask, Response, render_template, request
+from socketio import socketio_manage
+```
+
+socketio function maps to the /socket.io/someotherstuff url and this is how the client side of the Chatzilla will try to reach out to the server with some urgent real time goodness. We obviously need to handle that, and we are doing it by proxying the request to ChatNamespace (which we'll create in a second). Namespaces give us a way to manage various sub categories within a socket.io endpoint. For Chatzilla we will only be using a single such category called 'chat'. Let's look what a namespace definition might look like in our case:
+
+```
+class ChatNamespace(BaseNamespace):
+    def initialize(self):
+        self.logger = application.logger
+        self.log("Socketio session started")
+
+    def log(self, message):
+        self.logger.info("[{0}] {1}".format(self.socket.sessid, message))
+
+    def recv_connect(self):
+        self.log("New connection")
+
+    def recv_disconnect(self):
+        self.log("Client disconnected")
+```  
+
+ChatNamespace does not do a lot at this point - it logs connects and disconnects and that's it. Make sure you add the missing import to the chatzilla.py 
+
+```
+from socketio.namespace import BaseNamespace
+``` 
+
+### Client is always right
+
+Let's try to figure out if we can actually connect to the chat server from the client. One step at a time.
+
+#### Massive redesign
+
+Let's fix our landing page a bit. Start by bringing in templates
+
+```
+mkdir templates
+cd templates
+touch landing.html
+``` 
+
+Populate landing.html with the following html
+
+<code>
+&lt;!DOCTYPE html&gt;<br/>&lt;!--[if lt IE 7]&gt;      &lt;html class=&quot;no-js lt-ie9 lt-ie8 lt-ie7&quot;&gt; &lt;![endif]--&gt;<br/>&lt;!--[if IE 7]&gt;         &lt;html class=&quot;no-js lt-ie9 lt-ie8&quot;&gt; &lt;![endif]--&gt;<br/>&lt;!--[if IE 8]&gt;         &lt;html class=&quot;no-js lt-ie9&quot;&gt; &lt;![endif]--&gt;<br/>&lt;!--[if gt IE 8]&gt;&lt;!--&gt; &lt;html class=&quot;no-js&quot;&gt; &lt;!--&lt;![endif]--&gt;<br/>&lt;head&gt;<br/>	&lt;meta charset=&quot;utf-8&quot;&gt;<br/>	&lt;meta http-equiv=&quot;X-UA-Compatible&quot; content=&quot;IE=edge,chrome=1&quot;&gt;<br/>	&lt;meta http-equiv=&quot;cache-control&quot; content=&quot;no-cache&quot; /&gt;<br/>	&lt;title&gt;Chatzilla&lt;/title&gt;<br/>&lt;/head&gt;<br/>&lt;body&gt;<br/>	&lt;header&gt;<br/>		&lt;h1&gt;Welcome to Chatzilla&lt;/h1&gt;<br/>	&lt;/header&gt;<br/>	&lt;footer&gt;<br/>	&lt;/footer&gt;<br/><br/>	&lt;script src=&quot;http://code.jquery.com/jquery-1.10.1.min.js&quot;&gt;&lt;/script&gt;<br/>	&lt;script&gt;<br/>		$(function(){<br/>			console.log(&quot;Welcome to Chatzilla&quot;);<br/>		});<br/>	&lt;/script&gt;<br/>&lt;/body&gt;<br/>&lt;/html&gt;
+</code>
+
+Now let's render the template using Flask:
+
+```
+@application.route('/', methods=['GET'])
+def landing():
+    return render_template('landing.html')
+```
+
+Don't forget imports
+
+```
+from flask import Flask, Response, render_template
+```
+
+Once you run ```foreman start``` you should see a shiny new Chatzilla interface. Epic.
+
+#### Wire the socket
+
+Let's bring socket.io javascript goodness in the mix. 
+
+```
+mkdir static
+cd static
+mkdir scripts
+cd scripts
+curl -O https://dl.dropboxusercontent.com/u/9224326/www/chatzilla/scripts/socket.io.min.js -O https://dl.dropboxusercontent.com/u/9224326/www/chatzilla/scripts/WebSocketMain.swf -O https://dl.dropboxusercontent.com/u/9224326/www/chatzilla/scripts/WebSocketMainInsecure.swf
+``` 
+
+Let's update templates/landing.html to include socket.io
+
+<code>
+&lt;!DOCTYPE html&gt;<br/>&lt;!--[if lt IE 7]&gt;      &lt;html class=&quot;no-js lt-ie9 lt-ie8 lt-ie7&quot;&gt; &lt;![endif]--&gt;<br/>&lt;!--[if IE 7]&gt;         &lt;html class=&quot;no-js lt-ie9 lt-ie8&quot;&gt; &lt;![endif]--&gt;<br/>&lt;!--[if IE 8]&gt;         &lt;html class=&quot;no-js lt-ie9&quot;&gt; &lt;![endif]--&gt;<br/>&lt;!--[if gt IE 8]&gt;&lt;!--&gt; &lt;html class=&quot;no-js&quot;&gt; &lt;!--&lt;![endif]--&gt;<br/>&lt;head&gt;<br/>	&lt;meta charset=&quot;utf-8&quot;&gt;<br/>	&lt;meta http-equiv=&quot;X-UA-Compatible&quot; content=&quot;IE=edge,chrome=1&quot;&gt;<br/>	&lt;meta http-equiv=&quot;cache-control&quot; content=&quot;no-cache&quot; /&gt;<br/>	&lt;title&gt;Chatzilla&lt;/title&gt;<br/>&lt;/head&gt;<br/>&lt;body&gt;<br/>	&lt;header&gt;<br/>		&lt;h1&gt;Welcome to Chatzilla&lt;/h1&gt;<br/>	&lt;/header&gt;<br/>	&lt;footer&gt;<br/>	&lt;/footer&gt;<br/><br/>	&lt;script src=&quot;http://code.jquery.com/jquery-1.10.1.min.js&quot;&gt;&lt;/script&gt;<br/>	&lt;script src=&quot;{{ url_for('static', filename='scripts/socket.io.min.js') }}&quot;&gt;&lt;/script&gt;<br/>	&lt;script&gt;<br/>		$(function(){<br/>			console.log(&quot;Welcome to Chatzilla&quot;);<br/>		});<br/>	&lt;/script&gt;<br/>&lt;/body&gt;<br/>&lt;/html&gt;
+</code>
+
+### Connect to the server
+
+With socket.io js in place, we can now connect to our chat instance. Update landing.html template with the following code
+
+```
+$(function(){
+	console.log("Welcome to Chatzilla");
+	var socket = io.connect('/chat');
+	socket.on('connect', function () {
+		alert("You are connected to the chat server");
+	});
+});
+```
+Refresh the page to see the popup. Hooray!
+
+### Join the chat
+
+Once connected to the chat server, we should be able to join chat. Let's implement that. Jump back to chatzilla.py and add the following block to the ChatNamespace:
+
+```
+def on_join(self, name):
+	self.log("%s joined chat" % name)
+	return True, name
+```   
+
+Back to the client, let's update the 'connect' event handler 
+
+```
+socket.on('connect', function () {
+	socket.emit('join', 'Bob', function(joined, name){
+		console.log(joined,name);
+	});
+});
+```
+
+Notice how return values from the on_join in the ChatNamespace are automatically propagate to the client and we can recover them in the event handler for the emit method.
+
+### Send a message
+
+Let's add message sending functionality to the chat service. Start with the backend again
+
+```
+def on_message(self, message):
+	self.log('got a message: %s' % message)
+	return True, message
+``` 
+
+And now the client, let's automatically send a message once someone joins the chat
+
+```
+socket.emit('join', 'Bob', function(joined, name){
+	socket.emit('message', 'hello this is ' + name, function(sent){
+		console.log("message sent: ", sent);
+	});
+});
+```
+
+### Broadcast
+
+When a new message arrives to the server, we will want to send it to other people in the system. Let's get back to the ChatNamespace in chatzilla.py and add a BroadcastMixin which will help us do just that
+
+```
+class ChatNamespace(BaseNamespace, BroadcastMixin):
+```
+
+Keeping imports happy
+
+```
+from socketio.mixins import BroadcastMixin
+```
+
+With BroadcastMixin attached to the ChatNamespace, we can update the on_message handler to look like this
+
+```
+def on_message(self, message):
+	self.log('got a message: %s' % message)
+	self.broadcast_event_not_me("message", message)
+	return True, message
+```
+
+We can now update the client to look something like this
+
+```
+$(function(){
+	console.log("Welcome to Chatzilla");
+	var socket = io.connect('/chat');
+	socket.on('connect', function () {
+		socket.emit('join', 'Bob', function(joined, name){
+			socket.emit('message', 'hello this is ' + name, function(sent){
+				console.log("message sent: ", sent);
+			});
+		});
+	});
+
+	socket.on('message', function(message){
+		alert("got a message: " + message);
+	});
+});
+```  
+
+If you now have a couple of tabs open in your browser you'll see an alert box with a greeting from Bob.
+
+### Let's deploy
+
+Tons are users out there are looking forward to experiencing the new version of Chatzilla. Commit your changes, and push. 
+
+### 
+ 
+
+ 
+
+  
+
+
