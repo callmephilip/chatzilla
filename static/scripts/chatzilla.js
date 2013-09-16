@@ -64,9 +64,6 @@
 				chatAPI.join(email, function(joined, name){
 					if(joined){
 						$(form).hide();
-						// $(".compose-message-form").show();
-						// $(".messages").show();
-
 						$(".chat-panel").addClass("animated slideInRight");
 						$(".messages-wrapper").addClass("animated slideInLeft");
 						$(".splash").addClass("animated fadeOutUp");
@@ -88,14 +85,6 @@
 					if(sent){
 						$(".compose-message-form").find(".btn").removeAttr("disabled");
 						$(".compose-message-form").find("textarea").val("");
-						// $(".messages").append(
-						// 	jQuery("<li>").html(
-						// 		"<b>Me</b>: " + message
-						// 	).addClass("list-group-item").append(
-						// 		jQuery("<img>").attr("src", globals.myPicture)
-						// 	)
-						// );
-
 						$(".messages").append(
 							templates.chatMessage({
 								author : "Me",
@@ -115,13 +104,6 @@
 		});
 
 		chatAPI.onMessage = function(message){
-			// $(".messages").append(
-			// 	jQuery("<li>").html(
-			// 		"<b>" + message.sender + "</b>: " + message.content 
-			// 	).addClass("list-group-item").append(
-			// 		jQuery("<img>").attr("src", tool.getGravatarUrl(message.sender))
-			// 	)
-			// );
 			$(".messages").append(
 				templates.chatMessage({
 					author : message.sender,
