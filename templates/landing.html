@@ -12,16 +12,18 @@
 	<!-- Optional theme -->
 	<link rel="stylesheet" href="{{ url_for('static', filename='styles/custom.css') }}">
 	<link rel="stylesheet" href="{{ url_for('static', filename='styles/animate.min.css') }}">
+	<link href='http://fonts.googleapis.com/css?family=Arvo:400,700' rel='stylesheet' type='text/css'>
+	<link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}" />
 </head>
 <body>
-	<a href="https://github.com/callmephilip/chatzilla"><img style="position: absolute; z-index: 10001; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" alt="Fork me on GitHub"></a>
+	<a href="https://github.com/callmephilip/chatzilla"><img class="github" style="position: absolute; z-index: 10001; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" alt="Fork me on GitHub"></a>
 
 	<div class="stats-bar text-center"></div>
 
 	<div class="container">
 		<div class="splash">
 			<div class="overlay">
-				<h1>Chatzilla</h1>
+				<h1>Chatzilla</h1><div class="logo"></div>
 				<p class="lead">The easiest way to chat</p>
 				<form class="form-inline join-chat" role="form">
 					<div class="input-group input-group-lg">
@@ -108,7 +110,7 @@
 	</script>
 
 	<script id="template-stats-bar" type="text/template">
-		<span class="text-muted">who's online</span>
+		<span class="text-muted">Who's online?</span>
 		{{# each people}}
 			<img alt="{{email}}" width="20px" height="20px" src="{{image}}">
 		{{/each}}
