@@ -171,7 +171,7 @@ This should keep Heroku busy for a few moments. Once it's done processing the pu
 heroku open
 ```
 
-### Before you panick
+### Before you panic
 
 Just in case you are stuck/confused/lazy, you can grab all the code we've produced so far [here](https://github.com/callmephilip/chatzilla/releases/tag/v0.1) and keep following along.  
 
@@ -385,7 +385,9 @@ If you now have a couple of tabs open in your browser you'll see an alert box wi
 
 Tons are users out there are looking forward to experiencing the new version of Chatzilla. Commit your changes, and push. 
 
-### 
+### Before you panic
+
+As before, you can grab the code for this chapter [here](https://github.com/callmephilip/chatzilla/releases/tag/v0.2)   
  
 
  
