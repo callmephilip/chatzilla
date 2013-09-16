@@ -45,7 +45,11 @@
 			submitHandler: function(form) {
 				chatAPI.sendMessage($(form).find("[name='message']").val(), function(sent,message){
 					if(sent){
-						alert("Your message was sent");
+						$(".messages").append(
+							jQuery("<li>").html(
+								"<b>Me</b>: " + message
+							)
+						);
 					}
 				});
 			}
@@ -53,7 +57,9 @@
 
 		chatAPI.onMessage = function(message){
 			$(".messages").append(
-				jQuery("<li>").html(message)
+				jQuery("<li>").html(
+					"<b>" + message.sender + "</b>: " + message.content 
+				)
 			);
 		};
 
