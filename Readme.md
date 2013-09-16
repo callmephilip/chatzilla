@@ -89,7 +89,21 @@ touch chatzilla.py
 
 Let's fill it with some Python
 
-<script src="https://gist.github.com/callmephilip/6580321.js"></script>
+```python
+from gevent import monkey
+from flask import Flask
+
+monkey.patch_all()
+
+application = Flask(__name__)
+application.debug = True
+application.config['PORT'] = 5000
+
+
+@application.route('/', methods=['GET'])
+def landing():
+    return "Welcome to Chatzilla"
+``` 
 
 In it's current state, our app has none of the promised realtime awesomeness but we'll get there - one step at a time. 
 
@@ -103,7 +117,7 @@ touch run_server.py
 
 It looks like this:
 
-```
+```python
 from chatzilla import application
 from gevent import monkey
 from socketio.server import SocketIOServer
@@ -166,7 +180,7 @@ Just in case you are stuck/confused/lazy, you can grab all the code we've produc
 
 We currently have a socket.io endpoint exposed to the world and we should start handling various events that will get triggered once people start using it. Head to chatzilla.py and add the following:
 
-```
+```python
 @application.route('/socket.io/<path:remaining>')
 def socketio(remaining):
     try:
@@ -180,7 +194,7 @@ def socketio(remaining):
 
 Also update import statements on the top of the module: 
 
-```
+```python
 from flask import Flask, Response, render_template, request
 from socketio import socketio_manage
 ```
@@ -189,7 +203,7 @@ socketio function maps to the /socket.io/someotherstuff url and this is how the 
 
 Namespaces give us a way to manage various sub categories within a socket.io endpoint. For Chatzilla we will only be using a single such category called 'chat'. Let's look what a namespace definition might look like in our case:
 
-```
+```python
 class ChatNamespace(BaseNamespace):
     def initialize(self):
         self.logger = application.logger
@@ -207,7 +221,7 @@ class ChatNamespace(BaseNamespace):
 
 ChatNamespace does not do a lot at this point - it logs connects and disconnects and that's it. Make sure you add the missing import to the chatzilla.py 
 
-```
+```python
 from socketio.namespace import BaseNamespace
 ``` 
 
@@ -233,7 +247,7 @@ Populate landing.html with the following html
 
 Now let's render the template using Flask:
 
-```
+```python
 @application.route('/', methods=['GET'])
 def landing():
     return render_template('landing.html')
@@ -241,7 +255,7 @@ def landing():
 
 Don't forget imports
 
-```
+```python
 from flask import Flask, Response, render_template
 ```
 
@@ -269,7 +283,7 @@ Let's update templates/landing.html to include socket.io
 
 With socket.io javascript in place, we can now connect to our chat instance. Update landing.html template with the following code
 
-```
+```javascript
 $(function(){
 	console.log("Welcome to Chatzilla");
 	var socket = io.connect('/chat');
@@ -284,7 +298,7 @@ Refresh the page to see the popup. Hooray!
 
 Once connected to the chat server, we should be able to join chat. Let's implement that. Jump back to chatzilla.py and add the following block to the ChatNamespace:
 
-```
+```python
 def on_join(self, name):
 	self.log("%s joined chat" % name)
 	return True, name
@@ -292,7 +306,7 @@ def on_join(self, name):
 
 Back to the client, let's update the 'connect' event handler 
 
-```
+```javascript
 socket.on('connect', function () {
 	socket.emit('join', 'Bob', function(joined, name){
 		console.log(joined,name);
@@ -306,7 +320,7 @@ Notice how return values from the on_join in the ChatNamespace are automatically
 
 Let's add message sending functionality to the chat service. Start with the backend again
 
-```
+```python
 def on_message(self, message):
 	self.log('got a message: %s' % message)
 	return True, message
@@ -314,7 +328,7 @@ def on_message(self, message):
 
 And now the client, let's automatically send a message once someone joins the chat
 
-```
+```javascript
 socket.emit('join', 'Bob', function(joined, name){
 	socket.emit('message', 'hello this is ' + name, function(sent){
 		console.log("message sent: ", sent);
@@ -326,19 +340,19 @@ socket.emit('join', 'Bob', function(joined, name){
 
 When a new message arrives to the server, we will want to send it to other people in the system. Let's get back to the ChatNamespace in chatzilla.py and add a BroadcastMixin which will help us do just that
 
-```
+```python
 class ChatNamespace(BaseNamespace, BroadcastMixin):
 ```
 
 Keeping imports happy
 
-```
+```python
 from socketio.mixins import BroadcastMixin
 ```
 
 With BroadcastMixin attached to the ChatNamespace, we can update the on_message handler to look like this
 
-```
+```python
 def on_message(self, message):
 	self.log('got a message: %s' % message)
 	self.broadcast_event_not_me("message", message)
@@ -347,7 +361,7 @@ def on_message(self, message):
 
 We can now update the client to look something like this
 
-```
+```javascript
 $(function(){
 	console.log("Welcome to Chatzilla");
 	var socket = io.connect('/chat');
@@ -390,7 +404,7 @@ touch static/scripts/chatzilla.js
 
 Let's move all the inline js from the landing template to chatzilla.js so it looks like this
 
-```
+```javascript
 (function($,window){
 	$(function(){
 		console.log("Welcome to Chatzilla");
@@ -426,13 +440,13 @@ Let's add a little join chat form in a section between the header and the footer
 
 Before we wire the handlers for the form, let's grab [jquery validation plugin])(http://jqueryvalidation.org/) we can put ot good use here. Place this right after the jquery script tag.
 
-```
+```html
 <script src="http://ajax.aspnetcdn.com/ajax/jquery.validate/1.11.1/jquery.validate.min.js"></script>
 ```
 
 Let's update chatzilla.js to handle form submission + validation
 
-```
+```javascript
 (function($,window){
 	
 
@@ -473,7 +487,7 @@ Let's update chatzilla.js to handle form submission + validation
 
 Let's also start organizing our socket interactions so we can easily call our chat server from various UI event handlers. Here's how this little submodule could look like (with 2 methods for now):
 
-```
+```javascript
 var chatAPI = {
 	connect : function(done) {
 		this.socket = io.connect('/chat');
@@ -489,7 +503,7 @@ var chatAPI = {
 
 And as we update the rest of chatzilla.js: 
 
-```
+```javascript
 (function($,window){
 	
 	var chatAPI = {
@@ -542,7 +556,7 @@ Once the connection is established, let's hide the join form and show some kind 
 
 Our chatAPI module will need a new method (sendMessage): 
 
-```
+```javascript
 var chatAPI = {
 	connect : function(done) {
 		this.socket = io.connect('/chat');
@@ -561,7 +575,7 @@ var chatAPI = {
 
 And here's what chatzilla.js looks like now 
 
-```
+```javascript
 (function($,window){
 	
 	var chatAPI = {
@@ -629,7 +643,7 @@ As any respectable Chat application out there Chatzilla needs a list of messages
 
 First, let's figure out how this impacts our chatApi module. We'll have chatAPI trigger a handler once a new message is received: 
 
-```
+```javascript
 
 connect : function(done) {
 	
@@ -649,7 +663,7 @@ connect : function(done) {
 
 And then in the bindUI, we can do the following:
 
-```
+```javascript
 chatAPI.onMessage = function(message){
 	alert("you got a message: " + message);
 };
@@ -657,7 +671,7 @@ chatAPI.onMessage = function(message){
 
 chatzilla.js now looks like this
 
-```
+```javascript
 (function($,window){
 	
 	var chatAPI = {
@@ -738,13 +752,13 @@ Let's get rid of the alerts by creating a container for the messages in the land
 Notice that the message list is initially invisible. We'll show it once a person joins the chat (just like with the message form)
 
 
-```
+```javascript
 $(".messages").show();
 ```
 
 Let's update the onMessage handler so that it displays the message within the list: 
 
-```
+```javascript
 chatAPI.onMessage = function(message){
 	$(".messages").append(
 		jQuery("<li>").html(message)
@@ -761,7 +775,7 @@ Current version of Chatzilla has a number of issues. The most noticeable one is 
 
 We can take advantage of session data to keep track of the message sender. Let's modify on_join handler for the ChatNamespace in chatzilla.py
 
-```
+```python
 def on_join(self, email):
 	self.log("%s joined chat" % email)
     self.session['email'] = email
@@ -770,7 +784,7 @@ def on_join(self, email):
 
 This will allow to keep track of who's sending a message and we can use this data when we broadcast messages to others in the chat
 
-```
+```python
 def on_message(self, message):
 	self.log('got a message: %s' % message)
     self.broadcast_event_not_me("message",{ "sender" : self.session["email"], "content" : message})
@@ -780,7 +794,7 @@ def on_message(self, message):
 
 We can now update chatzilla.js to take advantage of this additional information
 
-```
+```javascript
 chatAPI.onMessage = function(message){
 	$(".messages").append(
 		jQuery("<li>").html(
@@ -792,7 +806,7 @@ chatAPI.onMessage = function(message){
 
 Let's also make sure your own message are added to the list once sent:
 
-```
+```javascript
 $(".compose-message-form").validate({
 			submitHandler: function(form) {
 				chatAPI.sendMessage($(form).find("[name='message']").val(), 					function(sent,message){
