@@ -1,10 +1,19 @@
-(function($,window){
+(function($,jQuery,window){
 	
 	var chatAPI = {
 
 		connect : function(done) {
+
+			var that = this;
+
 			this.socket = io.connect('/chat');
 			this.socket.on('connect', done);
+
+			this.socket.on('message', function(message){
+				if(that.onMessage){
+					that.onMessage(message);
+				}
+			});
 		},
 
 		join : function(email, onJoin){
@@ -18,6 +27,7 @@
 	};	
 
 	var bindUI = function(){
+
 		$(".join-chat").validate({
 			submitHandler: function(form) {
 				chatAPI.join($(form).find("[name='email']").val(), function(joined, name){
@@ -25,6 +35,7 @@
 						alert("You've joined Chatzilla");
 						$(form).hide();
 						$(".compose-message-form").show();
+						$(".messages").show();
 					}
 				});
 			}
@@ -39,6 +50,13 @@
 				});
 			}
 		});
+
+		chatAPI.onMessage = function(message){
+			$(".messages").append(
+				jQuery("<li>").html(message)
+			);
+		};
+
 	};
 
 	var ready = function(){
@@ -51,10 +69,4 @@
 
 	$(function(){ ready(); });
 
-}($,window));
-
-
-
-// socket.on('message', function(message){
-// 			alert("got a message: " + message);
-// 		});
+}($,jQuery,window));
