@@ -300,9 +300,34 @@ curl -O https://dl.dropboxusercontent.com/u/9224326/www/chatzilla/scripts/socket
 
 Let's update templates/landing.html to include socket.io
 
-<code>
-&lt;!DOCTYPE html&gt;<br/>&lt;!--[if lt IE 7]&gt;      &lt;html class=&quot;no-js lt-ie9 lt-ie8 lt-ie7&quot;&gt; &lt;![endif]--&gt;<br/>&lt;!--[if IE 7]&gt;         &lt;html class=&quot;no-js lt-ie9 lt-ie8&quot;&gt; &lt;![endif]--&gt;<br/>&lt;!--[if IE 8]&gt;         &lt;html class=&quot;no-js lt-ie9&quot;&gt; &lt;![endif]--&gt;<br/>&lt;!--[if gt IE 8]&gt;&lt;!--&gt; &lt;html class=&quot;no-js&quot;&gt; &lt;!--&lt;![endif]--&gt;<br/>&lt;head&gt;<br/>	&lt;meta charset=&quot;utf-8&quot;&gt;<br/>	&lt;meta http-equiv=&quot;X-UA-Compatible&quot; content=&quot;IE=edge,chrome=1&quot;&gt;<br/>	&lt;meta http-equiv=&quot;cache-control&quot; content=&quot;no-cache&quot; /&gt;<br/>	&lt;title&gt;Chatzilla&lt;/title&gt;<br/>&lt;/head&gt;<br/>&lt;body&gt;<br/>	&lt;header&gt;<br/>		&lt;h1&gt;Welcome to Chatzilla&lt;/h1&gt;<br/>	&lt;/header&gt;<br/>	&lt;footer&gt;<br/>	&lt;/footer&gt;<br/><br/>	&lt;script src=&quot;http://code.jquery.com/jquery-1.10.1.min.js&quot;&gt;&lt;/script&gt;<br/>	&lt;script src=&quot;{{ url_for('static', filename='scripts/socket.io.min.js') }}&quot;&gt;&lt;/script&gt;<br/>	&lt;script&gt;<br/>		$(function(){<br/>			console.log(&quot;Welcome to Chatzilla&quot;);<br/>		});<br/>	&lt;/script&gt;<br/>&lt;/body&gt;<br/>&lt;/html&gt;
-</code>
+```html
+<!DOCTYPE html>
+<!--[if lt IE 7]> <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]> <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]> <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	<meta http-equiv="cache-control" content="no-cache" />
+	<title>Chatzilla</title>
+</head>
+<body>
+	<header>
+		<h1>Welcome to Chatzilla</h1>
+	</header>
+	<footer></footer>
+
+	<script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+	<script src="{{ url_for('static', filename='scripts/socket.io.min.js') }}"></script>
+	<script>
+		$(function(){
+			console.log("Welcome to Chatzilla");
+		});
+	</script>
+</body>
+</html>
+```
 
 ### Connect to the server
 
@@ -451,17 +476,45 @@ Let's move all the inline js from the landing template to chatzilla.js so it loo
 
 The landing template should now look something like this
 
-<code>
-&lt;!DOCTYPE html&gt;<br/>&lt;!--[if lt IE 7]&gt;      &lt;html class=&quot;no-js lt-ie9 lt-ie8 lt-ie7&quot;&gt; &lt;![endif]--&gt;<br/>&lt;!--[if IE 7]&gt;         &lt;html class=&quot;no-js lt-ie9 lt-ie8&quot;&gt; &lt;![endif]--&gt;<br/>&lt;!--[if IE 8]&gt;         &lt;html class=&quot;no-js lt-ie9&quot;&gt; &lt;![endif]--&gt;<br/>&lt;!--[if gt IE 8]&gt;&lt;!--&gt; &lt;html class=&quot;no-js&quot;&gt; &lt;!--&lt;![endif]--&gt;<br/>&lt;head&gt;<br/>	&lt;meta charset=&quot;utf-8&quot;&gt;<br/>	&lt;meta http-equiv=&quot;X-UA-Compatible&quot; content=&quot;IE=edge,chrome=1&quot;&gt;<br/>	&lt;meta http-equiv=&quot;cache-control&quot; content=&quot;no-cache&quot; /&gt;<br/>	&lt;title&gt;Chatzilla&lt;/title&gt;<br/>&lt;/head&gt;<br/>&lt;body&gt;<br/>	&lt;header&gt;<br/>		&lt;h1&gt;Welcome to Chatzilla&lt;/h1&gt;<br/>	&lt;/header&gt;<br/>	&lt;footer&gt;<br/>	&lt;/footer&gt;<br/><br/>	&lt;script src=&quot;http://code.jquery.com/jquery-1.10.1.min.js&quot;&gt;&lt;/script&gt;<br/>	&lt;script src=&quot;{{ url_for('static', filename='scripts/socket.io.min.js') }}&quot;&gt;&lt;/script&gt;<br/>	&lt;script src=&quot;{{ url_for('static', filename='scripts/chatzilla.js') }}&quot;&gt;&lt;/script&gt;<br/>&lt;/body&gt;<br/>&lt;/html&gt;
-</code>
+```html
+<!DOCTYPE html>
+<!--[if lt IE 7]> <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]> <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]> <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	<meta http-equiv="cache-control" content="no-cache" />
+	<title>Chatzilla</title>
+</head>
+<body>
+	<header>
+		<h1>Welcome to Chatzilla</h1>
+	</header>
+	<footer>
+	</footer>
+
+	<script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+	<script src="{{ url_for('static', filename='scripts/socket.io.min.js') }}"></script>
+	<script src="{{ url_for('static', filename='scripts/chatzilla.js') }}"></script>
+</body>
+</html>
+```
   
 ### Add join chat UI
 
 Let's add a little join chat form in a section between the header and the footer of the landing page
 
-<code>
-&lt;section&gt;<br/>		&lt;form class=&quot;join-chat&quot;&gt;<br/>			&lt;label&gt;Type your email to join the chat&lt;/label&gt;<br/>			&lt;input name=&quot;email&quot; type=&quot;email&quot;&gt;<br/>			&lt;input type=&quot;submit&quot; value=&quot;Join&quot;&gt;<br/>		&lt;/form&gt;<br/>	&lt;/section&gt;
-</code>
+```html
+<section>
+	<form class="join-chat">
+		<label>Type your email to join the chat</label>
+		<input name="email" type="email">
+		<input type="submit" value="Join">
+	</form>
+</section>
+```
 
 Before we wire the handlers for the form, let's grab [jquery validation plugin])(http://jqueryvalidation.org/) we can put ot good use here. Place this right after the jquery script tag.
 
@@ -575,9 +628,12 @@ Commit what you have and let's move on.
 
 Once the connection is established, let's hide the join form and show some kind of message composer:
 
-<code>
-&lt;form class=&quot;compose-message-form&quot; style=&quot;display:none;&quot;&gt;<br/>			&lt;textarea name=&quot;message&quot; required&gt;&lt;/textarea&gt;<br/>			&lt;input type=&quot;submit&quot; value=&quot;send&quot;&gt;<br/>		&lt;/form&gt;
-</code>  
+```html
+<form class="compose-message-form" style="display:none;">
+	<textarea name="message" required></textarea>
+	<input type="submit" value="send">
+</form>
+```
 
 Our chatAPI module will need a new method (sendMessage): 
 
@@ -770,9 +826,22 @@ chatzilla.js now looks like this
 
 Let's get rid of the alerts by creating a container for the messages in the landing.html. After we update the section of the landing.html it looks like this 
 
-<code>
-&lt;section&gt;<br/>		&lt;form class=&quot;join-chat&quot;&gt;<br/>			&lt;label&gt;Type your email to join the chat&lt;/label&gt;<br/>			&lt;input name=&quot;email&quot; type=&quot;email&quot;&gt;<br/>			&lt;input type=&quot;submit&quot; value=&quot;Join&quot;&gt;<br/>		&lt;/form&gt;<br/><br/>		&lt;ul class=&quot;messages&quot; style=&quot;display:none;&quot;&gt;<br/>		&lt;/ul&gt;<br/><br/>		&lt;form class=&quot;compose-message-form&quot; style=&quot;display:none;&quot;&gt;<br/>			&lt;textarea name=&quot;message&quot; required&gt;&lt;/textarea&gt;<br/>			&lt;input type=&quot;submit&quot; value=&quot;send&quot;&gt;<br/>		&lt;/form&gt;<br/><br/>		<br/>	&lt;/section&gt;
-</code>
+```html
+<section>
+	<form class="join-chat">
+		<label>Type your email to join the chat</label>
+		<input name="email" type="email">
+		<input type="submit" value="Join">
+	</form>
+
+	<ul class="messages" style="display:none;"></ul>
+
+	<form class="compose-message-form" style="display:none;">
+		<textarea name="message" required></textarea>
+		<input type="submit" value="send">
+	</form>
+</section>
+```
 
 Notice that the message list is initially invisible. We'll show it once a person joins the chat (just like with the message form)
 
