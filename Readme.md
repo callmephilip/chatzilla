@@ -89,21 +89,7 @@ touch chatzilla.py
 
 Let's fill it with some Python
 
-```
-from gevent import monkey
-from flask import Flask
-
-monkey.patch_all()
-
-application = Flask(__name__)
-application.debug = True
-application.config['PORT'] = 5000
-
-
-@application.route('/', methods=['GET'])
-def landing():
-    return "Welcome to Chatzilla"
-``` 
+<script src="https://gist.github.com/callmephilip/6580321.js"></script>
 
 In it's current state, our app has none of the promised realtime awesomeness but we'll get there - one step at a time. 
 
