@@ -1,15 +1,13 @@
-# Realtime chat using Flask +  Heroku 
-## featuring socket.io + Gevent-socketio   
+# Realtime chat with Flask and Heroku 
+# featuring socket.io + Gevent-socketio   
 
+This is a step by step tutorial on building a basic real time chat application using [Flask](http://flask.pocoo.org/), [socket.io](http://socket.io/) and [gevent-socketio](https://github.com/abourget/gevent-socketio). All the code is available [here](https://github.com/callmephilip/chatzilla). You can find live version of the app [here](chatzilla.herokuapp.com).   
 
-We will be building a realtime chat application using Flask, a popular micro web framework and socket.io. All of this running on Heroku   
-
-
+   
 ## Chapter 1: Getting started 
 
 I assume you know what Heroku is and you've seen Python before. Prior knowledge of Flask is a plus but given how minimalistic it is, you can just tag along.  
 
-<What is socket.io and why we are using it?>
 
 ### Heroku up
 
@@ -39,7 +37,7 @@ We now have an empty git repository with a remote aliased 'heroku' pointing to t
 
 #### Virtual environment
 
-As every responsible Python dev, you use some kind of virtual environment manager. I use virtual env helper. Create a virtual environment named 'chatzilla' and automatically activate it:
+As every responsible Python developer, you use some kind of virtual environment manager (I personally use [virtual env wrapper](http://virtualenvwrapper.readthedocs.org/en/latest/index.html)). Create a virtual environment named 'chatzilla' (or something else) and automatically activate it:
 
 ```
 mkvirtualenv chatzilla
@@ -55,7 +53,7 @@ Pip is great for getting all your jazz organized. We'll be using it to install a
 pip install Flask gevent gevent-websocket gevent-socketio gunicorn==0.16.1 
 ```
 
-<explain what these modules are + comment on gunicorn deal http://stackoverflow.com/questions/14656841/geventsocketioworker-has-no-attribute-socket>
+Please note we are using a particular version of the gunicor since later versions seem to have certain [issues](stackoverflow.com/questions/14656841/geventsocketioworker-has-no-attribute-socket). 
 
 #### Freeze
 
@@ -83,7 +81,7 @@ wsgiref==0.1.2
 
 #### chatzilla.py
 
-Let's create the entry point for the application now
+Let's create an entry point for the application now
 
 ```
 touch chatzilla.py
@@ -155,7 +153,7 @@ Let's see if this works
 foreman start
 ```
 
-This should launch a local dev server on your machine. If you head to http://localhost:5000/, you should be able to witness Chatzilla in all it's somewhat glory.
+This should launch a local dev server on your machine. If you head to http://localhost:5000/, you should be able to witness Chatzilla in all its glory.
 
 Let's go global now 
 
@@ -201,7 +199,9 @@ from flask import Flask, Response, render_template, request
 from socketio import socketio_manage
 ```
 
-socketio function maps to the /socket.io/someotherstuff url and this is how the client side of the Chatzilla will try to reach out to the server with some urgent real time goodness. We obviously need to handle that, and we are doing it by proxying the request to ChatNamespace (which we'll create in a second). Namespaces give us a way to manage various sub categories within a socket.io endpoint. For Chatzilla we will only be using a single such category called 'chat'. Let's look what a namespace definition might look like in our case:
+socketio function maps to the /socket.io/someotherstuff url and this is how the client side of the Chatzilla will try to reach out to the server with some urgent real time goodness. We obviously need to handle that, and we are doing it by proxying the request to ChatNamespace (which we'll create in a second). 
+
+Namespaces give us a way to manage various sub categories within a socket.io endpoint. For Chatzilla we will only be using a single such category called 'chat'. Let's look what a namespace definition might look like in our case:
 
 ```
 class ChatNamespace(BaseNamespace):
@@ -281,7 +281,7 @@ Let's update templates/landing.html to include socket.io
 
 ### Connect to the server
 
-With socket.io js in place, we can now connect to our chat instance. Update landing.html template with the following code
+With socket.io javascript in place, we can now connect to our chat instance. Update landing.html template with the following code
 
 ```
 $(function(){
@@ -383,7 +383,7 @@ If you now have a couple of tabs open in your browser you'll see an alert box wi
 
 ### Let's deploy
 
-Tons are users out there are looking forward to experiencing the new version of Chatzilla. Commit your changes, and push. 
+Tons of users out there are looking forward to experiencing the new version of Chatzilla. Commit your changes, and push. 
 
 ### Before you panic
 
@@ -833,6 +833,10 @@ git push heroku master
 All the code for chapter 3 is [here](https://github.com/callmephilip/chatzilla/releases/tag/v0.3) if you need it.
 
 
-## Chapter 4: And then this happened
+## Chapter 4: More UI
+
+The final version of the app is available [here](http://chatzilla.herokuapp.com/). You'll notice it's quite different from where we left in Chapter 3. All the code is available [here](https://github.com/callmephilip/chatzilla).
+
+
 
 
