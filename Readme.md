@@ -1,5 +1,5 @@
 # Realtime chat with Flask and Heroku 
-# featuring socket.io + Gevent-socketio   
+
 
 This is a step by step tutorial on building a basic real time chat application using [Flask](http://flask.pocoo.org/), [socket.io](http://socket.io/) and [gevent-socketio](https://github.com/abourget/gevent-socketio). All the code is available [here](https://github.com/callmephilip/chatzilla). You can find live version of the app [here](chatzilla.herokuapp.com).   
 
@@ -241,9 +241,34 @@ touch landing.html
 
 Populate landing.html with the following html
 
-<code>
-&lt;!DOCTYPE html&gt;<br/>&lt;!--[if lt IE 7]&gt;      &lt;html class=&quot;no-js lt-ie9 lt-ie8 lt-ie7&quot;&gt; &lt;![endif]--&gt;<br/>&lt;!--[if IE 7]&gt;         &lt;html class=&quot;no-js lt-ie9 lt-ie8&quot;&gt; &lt;![endif]--&gt;<br/>&lt;!--[if IE 8]&gt;         &lt;html class=&quot;no-js lt-ie9&quot;&gt; &lt;![endif]--&gt;<br/>&lt;!--[if gt IE 8]&gt;&lt;!--&gt; &lt;html class=&quot;no-js&quot;&gt; &lt;!--&lt;![endif]--&gt;<br/>&lt;head&gt;<br/>	&lt;meta charset=&quot;utf-8&quot;&gt;<br/>	&lt;meta http-equiv=&quot;X-UA-Compatible&quot; content=&quot;IE=edge,chrome=1&quot;&gt;<br/>	&lt;meta http-equiv=&quot;cache-control&quot; content=&quot;no-cache&quot; /&gt;<br/>	&lt;title&gt;Chatzilla&lt;/title&gt;<br/>&lt;/head&gt;<br/>&lt;body&gt;<br/>	&lt;header&gt;<br/>		&lt;h1&gt;Welcome to Chatzilla&lt;/h1&gt;<br/>	&lt;/header&gt;<br/>	&lt;footer&gt;<br/>	&lt;/footer&gt;<br/><br/>	&lt;script src=&quot;http://code.jquery.com/jquery-1.10.1.min.js&quot;&gt;&lt;/script&gt;<br/>	&lt;script&gt;<br/>		$(function(){<br/>			console.log(&quot;Welcome to Chatzilla&quot;);<br/>		});<br/>	&lt;/script&gt;<br/>&lt;/body&gt;<br/>&lt;/html&gt;
-</code>
+```html
+<!DOCTYPE html>
+<!--[if lt IE 7]> <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]> <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]> <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	<meta http-equiv="cache-control" content="no-cache" />
+	<title>Chatzilla</title>
+</head>
+<body>
+	<header>
+		<h1>Welcome to Chatzilla</h1>
+	</header>
+	<footer></footer>
+
+	<script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+	<script>
+		$(function(){
+			console.log("Welcome to Chatzilla");
+		});
+	</script>
+</body>
+</html>
+```
+
 
 Now let's render the template using Flask:
 
