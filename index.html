@@ -1,0 +1,954 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Chatzilla by callmephilip</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="javascripts/scale.fix.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header class="without-description">
+        <h1>Chatzilla</h1>
+        <p></p>
+        <p class="view"><a href="https://github.com/callmephilip/chatzilla">View the Project on GitHub <small>callmephilip/chatzilla</small></a></p>
+        <ul>
+          <li><a href="https://github.com/callmephilip/chatzilla/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/callmephilip/chatzilla/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/callmephilip/chatzilla">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h1>
+<a name="realtime-chat-with-flask-and-heroku" class="anchor" href="#realtime-chat-with-flask-and-heroku"><span class="octicon octicon-link"></span></a>Realtime chat with Flask and Heroku</h1>
+
+<p>This is a step by step tutorial on building a basic real time chat application using <a href="http://flask.pocoo.org/">Flask</a>, <a href="http://socket.io/">socket.io</a> and <a href="https://github.com/abourget/gevent-socketio">gevent-socketio</a>. All the code is available <a href="https://github.com/callmephilip/chatzilla">here</a>. You can find live version of the app <a href="chatzilla.herokuapp.com">here</a>.   </p>
+
+<h2>
+<a name="chapter-1-getting-started" class="anchor" href="#chapter-1-getting-started"><span class="octicon octicon-link"></span></a>Chapter 1: Getting started</h2>
+
+<p>I assume you know what Heroku is and you've seen Python before. Prior knowledge of Flask is a plus but given how minimalistic it is, you can just tag along.  </p>
+
+<h3>
+<a name="heroku-up" class="anchor" href="#heroku-up"><span class="octicon octicon-link"></span></a>Heroku up</h3>
+
+<p>First things first, let's create a shiny new appication on Heroku</p>
+
+<pre><code>heroku apps:create YOUR_APPLICATION_NAME
+</code></pre>
+
+<p>I called my app 'chatzilla' and got the following output</p>
+
+<pre><code>Creating chatzilla... done, stack is cedar
+http://chatzilla.herokuapp.com/ | git@heroku.com:chatzilla.git
+</code></pre>
+
+<p>The git part is important, let's put it to good use. Let's setup a git repository and point it towards heroku </p>
+
+<pre><code>git init
+git remote add heroku git@heroku.com:&lt;YOUR_APP_NAME&gt;.git
+</code></pre>
+
+<p>We now have an empty git repository with a remote aliased 'heroku' pointing to the Heroku git for the project. The game is afoot. </p>
+
+<h3>
+<a name="setup-basic-flask-app" class="anchor" href="#setup-basic-flask-app"><span class="octicon octicon-link"></span></a>Setup basic Flask app</h3>
+
+<h4>
+<a name="virtual-environment" class="anchor" href="#virtual-environment"><span class="octicon octicon-link"></span></a>Virtual environment</h4>
+
+<p>As every responsible Python developer, you use some kind of virtual environment manager (I personally use <a href="http://virtualenvwrapper.readthedocs.org/en/latest/index.html">virtual env wrapper</a>). Create a virtual environment named 'chatzilla' (or something else) and automatically activate it:</p>
+
+<pre><code>mkvirtualenv chatzilla
+</code></pre>
+
+<p>Virtual envs save your mental health and remaining hair, so use them. </p>
+
+<h4>
+<a name="get-all-the-goods-using-pip" class="anchor" href="#get-all-the-goods-using-pip"><span class="octicon octicon-link"></span></a>Get all the goods using Pip</h4>
+
+<p>Pip is great for getting all your jazz organized. We'll be using it to install all the modules we need to make Chatzilla happen.</p>
+
+<pre><code>pip install Flask gevent gevent-websocket gevent-socketio gunicorn==0.16.1 
+</code></pre>
+
+<p>Please note we are using a particular version of the gunicor since later versions seem to have certain <a href="stackoverflow.com/questions/14656841/geventsocketioworker-has-no-attribute-socket">issues</a>. </p>
+
+<h4>
+<a name="freeze" class="anchor" href="#freeze"><span class="octicon octicon-link"></span></a>Freeze</h4>
+
+<p>Once Pip has installed all the modules to our previously pristine virtual environment, it's time to get a snapshot of what's installed so that when you move your app elsewhere, you can easily restore the environment</p>
+
+<pre><code>pip freeze &gt; requirements.txt
+</code></pre>
+
+<p>Your requirements.txt should look something like this</p>
+
+<pre><code>Flask==0.10.1
+Jinja2==2.7.1
+MarkupSafe==0.18
+Werkzeug==0.9.4
+gevent==0.13.8
+gevent-socketio==0.3.5-rc2
+gevent-websocket==0.3.6
+greenlet==0.4.1
+gunicorn==0.16.1
+itsdangerous==0.23
+wsgiref==0.1.2
+</code></pre>
+
+<h4>
+<a name="chatzillapy" class="anchor" href="#chatzillapy"><span class="octicon octicon-link"></span></a>chatzilla.py</h4>
+
+<p>Let's create an entry point for the application now</p>
+
+<pre><code>touch chatzilla.py
+</code></pre>
+
+<p>Let's fill it with some Python</p>
+
+<div class="highlight highlight-python"><pre><span class="kn">from</span> <span class="nn">gevent</span> <span class="kn">import</span> <span class="n">monkey</span>
+<span class="kn">from</span> <span class="nn">flask</span> <span class="kn">import</span> <span class="n">Flask</span>
+
+<span class="n">monkey</span><span class="o">.</span><span class="n">patch_all</span><span class="p">()</span>
+
+<span class="n">application</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="n">__name__</span><span class="p">)</span>
+<span class="n">application</span><span class="o">.</span><span class="n">debug</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="n">application</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">'PORT'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">5000</span>
+
+
+<span class="nd">@application.route</span><span class="p">(</span><span class="s">'/'</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s">'GET'</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">landing</span><span class="p">():</span>
+    <span class="k">return</span> <span class="s">"Welcome to Chatzilla"</span>
+</pre></div>
+
+<p>In it's current state, our app has none of the promised realtime awesomeness but we'll get there - one step at a time. </p>
+
+<h4>
+<a name="run_serverpy" class="anchor" href="#run_serverpy"><span class="octicon octicon-link"></span></a>run_server.py</h4>
+
+<p>In order to run chatzilla, we'll add another python module</p>
+
+<pre><code>touch run_server.py
+</code></pre>
+
+<p>It looks like this:</p>
+
+<div class="highlight highlight-python"><pre><span class="kn">from</span> <span class="nn">chatzilla</span> <span class="kn">import</span> <span class="n">application</span>
+<span class="kn">from</span> <span class="nn">gevent</span> <span class="kn">import</span> <span class="n">monkey</span>
+<span class="kn">from</span> <span class="nn">socketio.server</span> <span class="kn">import</span> <span class="n">SocketIOServer</span>
+
+
+<span class="n">monkey</span><span class="o">.</span><span class="n">patch_all</span><span class="p">()</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">'__main__'</span><span class="p">:</span>
+    <span class="n">SocketIOServer</span><span class="p">(</span>
+        <span class="p">(</span><span class="s">''</span><span class="p">,</span> <span class="n">application</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">'PORT'</span><span class="p">]),</span> 
+        <span class="n">application</span><span class="p">,</span>
+        <span class="n">resource</span><span class="o">=</span><span class="s">"socket.io"</span><span class="p">)</span><span class="o">.</span><span class="n">serve_forever</span><span class="p">()</span>
+</pre></div>
+
+<h3>
+<a name="procfile--flask-meets-heroku" class="anchor" href="#procfile--flask-meets-heroku"><span class="octicon octicon-link"></span></a>Procfile : Flask meets Heroku</h3>
+
+<p>Before a much deserved refreshing beverage, let's tell Heroku how to run our application using Procfile</p>
+
+<pre><code>touch Procfile
+</code></pre>
+
+<p>Inside:</p>
+
+<pre><code>web: gunicorn --worker-class socketio.sgunicorn.GeventSocketIOWorker run_server
+</code></pre>
+
+<p>This is basically us saying: could we have a web instance running gunicorn with a worker that can speak socket.io and yeah, check run_server.py for more instructions, por favor.</p>
+
+<h3>
+<a name="but-will-it-blend" class="anchor" href="#but-will-it-blend"><span class="octicon octicon-link"></span></a>But will it blend?</h3>
+
+<p>Let's see if this works</p>
+
+<pre><code>foreman start
+</code></pre>
+
+<p>This should launch a local dev server on your machine. If you head to http://localhost:5000/, you should be able to witness Chatzilla in all its glory.</p>
+
+<p>Let's go global now </p>
+
+<pre><code>git add .
+git commit -a -m "setup basic Flask app"
+git push heroku master
+</code></pre>
+
+<p>This should keep Heroku busy for a few moments. Once it's done processing the push, we can take a look at Chatzilla in the wild</p>
+
+<pre><code>heroku open
+</code></pre>
+
+<h3>
+<a name="before-you-panic" class="anchor" href="#before-you-panic"><span class="octicon octicon-link"></span></a>Before you panic</h3>
+
+<p>Just in case you are stuck/confused/lazy, you can grab all the code we've produced so far <a href="https://github.com/callmephilip/chatzilla/releases/tag/v0.1">here</a> and keep following along.  </p>
+
+<h2>
+<a name="chapter-2-sockets-por-favor" class="anchor" href="#chapter-2-sockets-por-favor"><span class="octicon octicon-link"></span></a>Chapter 2: Sockets, por favor</h2>
+
+<h3>
+<a name="wire-a-namespace" class="anchor" href="#wire-a-namespace"><span class="octicon octicon-link"></span></a>Wire a namespace</h3>
+
+<p>We currently have a socket.io endpoint exposed to the world and we should start handling various events that will get triggered once people start using it. Head to chatzilla.py and add the following:</p>
+
+<div class="highlight highlight-python"><pre><span class="nd">@application.route</span><span class="p">(</span><span class="s">'/socket.io/&lt;path:remaining&gt;'</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">socketio</span><span class="p">(</span><span class="n">remaining</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">socketio_manage</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">environ</span><span class="p">,</span> <span class="p">{</span><span class="s">'/chat'</span><span class="p">:</span> <span class="n">ChatNamespace</span><span class="p">},</span> <span class="n">request</span><span class="p">)</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="n">application</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">"Exception while handling socketio connection"</span><span class="p">,</span>
+                         <span class="n">exc_info</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Response</span><span class="p">()</span>
+
+</pre></div>
+
+<p>Also update import statements on the top of the module: </p>
+
+<div class="highlight highlight-python"><pre><span class="kn">from</span> <span class="nn">flask</span> <span class="kn">import</span> <span class="n">Flask</span><span class="p">,</span> <span class="n">Response</span><span class="p">,</span> <span class="n">render_template</span><span class="p">,</span> <span class="n">request</span>
+<span class="kn">from</span> <span class="nn">socketio</span> <span class="kn">import</span> <span class="n">socketio_manage</span>
+</pre></div>
+
+<p>socketio function maps to the /socket.io/someotherstuff url and this is how the client side of the Chatzilla will try to reach out to the server with some urgent real time goodness. We obviously need to handle that, and we are doing it by proxying the request to ChatNamespace (which we'll create in a second). </p>
+
+<p>Namespaces give us a way to manage various sub categories within a socket.io endpoint. For Chatzilla we will only be using a single such category called 'chat'. Let's look what a namespace definition might look like in our case:</p>
+
+<div class="highlight highlight-python"><pre><span class="k">class</span> <span class="nc">ChatNamespace</span><span class="p">(</span><span class="n">BaseNamespace</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">application</span><span class="o">.</span><span class="n">logger</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s">"Socketio session started"</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">"[{0}] {1}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">socket</span><span class="o">.</span><span class="n">sessid</span><span class="p">,</span> <span class="n">message</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">recv_connect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s">"New connection"</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">recv_disconnect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s">"Client disconnected"</span><span class="p">)</span>
+</pre></div>
+
+<p>ChatNamespace does not do a lot at this point - it logs connects and disconnects and that's it. Make sure you add the missing import to the chatzilla.py </p>
+
+<div class="highlight highlight-python"><pre><span class="kn">from</span> <span class="nn">socketio.namespace</span> <span class="kn">import</span> <span class="n">BaseNamespace</span>
+</pre></div>
+
+<h3>
+<a name="client-is-always-right" class="anchor" href="#client-is-always-right"><span class="octicon octicon-link"></span></a>Client is always right</h3>
+
+<p>Let's try to figure out if we can actually connect to the chat server from the client. One step at a time.</p>
+
+<h4>
+<a name="massive-redesign" class="anchor" href="#massive-redesign"><span class="octicon octicon-link"></span></a>Massive redesign</h4>
+
+<p>Let's fix our landing page a bit. Start by bringing in templates</p>
+
+<pre><code>mkdir templates
+cd templates
+touch landing.html
+</code></pre>
+
+<p>Populate landing.html with the following html</p>
+
+<div class="highlight highlight-html"><pre><span class="cp">&lt;!DOCTYPE html&gt;</span>
+<span class="c">&lt;!--[if lt IE 7]&gt; &lt;html class="no-js lt-ie9 lt-ie8 lt-ie7"&gt; &lt;![endif]--&gt;</span>
+<span class="c">&lt;!--[if IE 7]&gt; &lt;html class="no-js lt-ie9 lt-ie8"&gt; &lt;![endif]--&gt;</span>
+<span class="c">&lt;!--[if IE 8]&gt; &lt;html class="no-js lt-ie9"&gt; &lt;![endif]--&gt;</span>
+<span class="c">&lt;!--[if gt IE 8]&gt;&lt;!--&gt;</span> <span class="nt">&lt;html</span> <span class="na">class=</span><span class="s">"no-js"</span><span class="nt">&gt;</span> <span class="c">&lt;!--&lt;![endif]--&gt;</span>
+<span class="nt">&lt;head&gt;</span>
+    <span class="nt">&lt;meta</span> <span class="na">charset=</span><span class="s">"utf-8"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;meta</span> <span class="na">http-equiv=</span><span class="s">"X-UA-Compatible"</span> <span class="na">content=</span><span class="s">"IE=edge,chrome=1"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;meta</span> <span class="na">http-equiv=</span><span class="s">"cache-control"</span> <span class="na">content=</span><span class="s">"no-cache"</span> <span class="nt">/&gt;</span>
+    <span class="nt">&lt;title&gt;</span>Chatzilla<span class="nt">&lt;/title&gt;</span>
+<span class="nt">&lt;/head&gt;</span>
+<span class="nt">&lt;body&gt;</span>
+    <span class="nt">&lt;header&gt;</span>
+        <span class="nt">&lt;h1&gt;</span>Welcome to Chatzilla<span class="nt">&lt;/h1&gt;</span>
+    <span class="nt">&lt;/header&gt;</span>
+    <span class="nt">&lt;footer&gt;&lt;/footer&gt;</span>
+
+    <span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"http://code.jquery.com/jquery-1.10.1.min.js"</span><span class="nt">&gt;&lt;/script&gt;</span>
+    <span class="nt">&lt;script&gt;</span>
+        <span class="nx">$</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+            <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Welcome to Chatzilla"</span><span class="p">);</span>
+        <span class="p">});</span>
+    <span class="nt">&lt;/script&gt;</span>
+<span class="nt">&lt;/body&gt;</span>
+<span class="nt">&lt;/html&gt;</span>
+</pre></div>
+
+<p>Now let's render the template using Flask:</p>
+
+<div class="highlight highlight-python"><pre><span class="nd">@application.route</span><span class="p">(</span><span class="s">'/'</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s">'GET'</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">landing</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s">'landing.html'</span><span class="p">)</span>
+</pre></div>
+
+<p>Don't forget imports</p>
+
+<div class="highlight highlight-python"><pre><span class="kn">from</span> <span class="nn">flask</span> <span class="kn">import</span> <span class="n">Flask</span><span class="p">,</span> <span class="n">Response</span><span class="p">,</span> <span class="n">render_template</span>
+</pre></div>
+
+<p>Once you run <code>foreman start</code> you should see a shiny new Chatzilla interface. Epic.</p>
+
+<h4>
+<a name="wire-the-socket" class="anchor" href="#wire-the-socket"><span class="octicon octicon-link"></span></a>Wire the socket</h4>
+
+<p>Let's bring socket.io javascript goodness in the mix. </p>
+
+<pre><code>mkdir static
+cd static
+mkdir scripts
+cd scripts
+curl -O https://dl.dropboxusercontent.com/u/9224326/www/chatzilla/scripts/socket.io.min.js 
+-O https://dl.dropboxusercontent.com/u/9224326/www/chatzilla/scripts/WebSocketMain.swf 
+-O https://dl.dropboxusercontent.com/u/9224326/www/chatzilla/scripts/WebSocketMainInsecure.swf
+</code></pre>
+
+<p>Let's update templates/landing.html to include socket.io</p>
+
+<div class="highlight highlight-html"><pre><span class="cp">&lt;!DOCTYPE html&gt;</span>
+<span class="c">&lt;!--[if lt IE 7]&gt; &lt;html class="no-js lt-ie9 lt-ie8 lt-ie7"&gt; &lt;![endif]--&gt;</span>
+<span class="c">&lt;!--[if IE 7]&gt; &lt;html class="no-js lt-ie9 lt-ie8"&gt; &lt;![endif]--&gt;</span>
+<span class="c">&lt;!--[if IE 8]&gt; &lt;html class="no-js lt-ie9"&gt; &lt;![endif]--&gt;</span>
+<span class="c">&lt;!--[if gt IE 8]&gt;&lt;!--&gt;</span> <span class="nt">&lt;html</span> <span class="na">class=</span><span class="s">"no-js"</span><span class="nt">&gt;</span> <span class="c">&lt;!--&lt;![endif]--&gt;</span>
+<span class="nt">&lt;head&gt;</span>
+    <span class="nt">&lt;meta</span> <span class="na">charset=</span><span class="s">"utf-8"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;meta</span> <span class="na">http-equiv=</span><span class="s">"X-UA-Compatible"</span> <span class="na">content=</span><span class="s">"IE=edge,chrome=1"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;meta</span> <span class="na">http-equiv=</span><span class="s">"cache-control"</span> <span class="na">content=</span><span class="s">"no-cache"</span> <span class="nt">/&gt;</span>
+    <span class="nt">&lt;title&gt;</span>Chatzilla<span class="nt">&lt;/title&gt;</span>
+<span class="nt">&lt;/head&gt;</span>
+<span class="nt">&lt;body&gt;</span>
+    <span class="nt">&lt;header&gt;</span>
+        <span class="nt">&lt;h1&gt;</span>Welcome to Chatzilla<span class="nt">&lt;/h1&gt;</span>
+    <span class="nt">&lt;/header&gt;</span>
+    <span class="nt">&lt;footer&gt;&lt;/footer&gt;</span>
+
+    <span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"http://code.jquery.com/jquery-1.10.1.min.js"</span><span class="nt">&gt;&lt;/script&gt;</span>
+    <span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"{{ url_for('static', filename='scripts/socket.io.min.js') }}"</span><span class="nt">&gt;&lt;/script&gt;</span>
+    <span class="nt">&lt;script&gt;</span>
+        <span class="nx">$</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+            <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Welcome to Chatzilla"</span><span class="p">);</span>
+        <span class="p">});</span>
+    <span class="nt">&lt;/script&gt;</span>
+<span class="nt">&lt;/body&gt;</span>
+<span class="nt">&lt;/html&gt;</span>
+</pre></div>
+
+<h3>
+<a name="connect-to-the-server" class="anchor" href="#connect-to-the-server"><span class="octicon octicon-link"></span></a>Connect to the server</h3>
+
+<p>With socket.io javascript in place, we can now connect to our chat instance. Update landing.html template with the following code</p>
+
+<div class="highlight highlight-javascript"><pre><span class="nx">$</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Welcome to Chatzilla"</span><span class="p">);</span>
+    <span class="kd">var</span> <span class="nx">socket</span> <span class="o">=</span> <span class="nx">io</span><span class="p">.</span><span class="nx">connect</span><span class="p">(</span><span class="s1">'/chat'</span><span class="p">);</span>
+    <span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'connect'</span><span class="p">,</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+        <span class="nx">alert</span><span class="p">(</span><span class="s2">"You are connected to the chat server"</span><span class="p">);</span>
+    <span class="p">});</span>
+<span class="p">});</span>
+</pre></div>
+
+<p>Refresh the page to see the popup. Hooray!</p>
+
+<h3>
+<a name="join-the-chat" class="anchor" href="#join-the-chat"><span class="octicon octicon-link"></span></a>Join the chat</h3>
+
+<p>Once connected to the chat server, we should be able to join chat. Let's implement that. Jump back to chatzilla.py and add the following block to the ChatNamespace:</p>
+
+<div class="highlight highlight-python"><pre><span class="k">def</span> <span class="nf">on_join</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s">"</span><span class="si">%s</span><span class="s"> joined chat"</span> <span class="o">%</span> <span class="n">name</span><span class="p">)</span>
+    <span class="k">return</span> <span class="bp">True</span><span class="p">,</span> <span class="n">name</span>
+</pre></div>
+
+<p>Back to the client, let's update the 'connect' event handler </p>
+
+<div class="highlight highlight-javascript"><pre><span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'connect'</span><span class="p">,</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+    <span class="nx">socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">'join'</span><span class="p">,</span> <span class="s1">'Bob'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">joined</span><span class="p">,</span> <span class="nx">name</span><span class="p">){</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">joined</span><span class="p">,</span><span class="nx">name</span><span class="p">);</span>
+    <span class="p">});</span>
+<span class="p">});</span>
+</pre></div>
+
+<p>Notice how return values from the on_join in the ChatNamespace are automatically propagate to the client and we can recover them in the event handler for the emit method.</p>
+
+<h3>
+<a name="send-a-message" class="anchor" href="#send-a-message"><span class="octicon octicon-link"></span></a>Send a message</h3>
+
+<p>Let's add message sending functionality to the chat service. Start with the backend again</p>
+
+<div class="highlight highlight-python"><pre><span class="k">def</span> <span class="nf">on_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s">'got a message: </span><span class="si">%s</span><span class="s">'</span> <span class="o">%</span> <span class="n">message</span><span class="p">)</span>
+    <span class="k">return</span> <span class="bp">True</span><span class="p">,</span> <span class="n">message</span>
+</pre></div>
+
+<p>And now the client, let's automatically send a message once someone joins the chat</p>
+
+<div class="highlight highlight-javascript"><pre><span class="nx">socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">'join'</span><span class="p">,</span> <span class="s1">'Bob'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">joined</span><span class="p">,</span> <span class="nx">name</span><span class="p">){</span>
+    <span class="nx">socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">'message'</span><span class="p">,</span> <span class="s1">'hello this is '</span> <span class="o">+</span> <span class="nx">name</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">sent</span><span class="p">){</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"message sent: "</span><span class="p">,</span> <span class="nx">sent</span><span class="p">);</span>
+    <span class="p">});</span>
+<span class="p">});</span>
+</pre></div>
+
+<h3>
+<a name="broadcast" class="anchor" href="#broadcast"><span class="octicon octicon-link"></span></a>Broadcast</h3>
+
+<p>When a new message arrives to the server, we will want to send it to other people in the system. Let's get back to the ChatNamespace in chatzilla.py and add a BroadcastMixin which will help us do just that</p>
+
+<div class="highlight highlight-python"><pre><span class="k">class</span> <span class="nc">ChatNamespace</span><span class="p">(</span><span class="n">BaseNamespace</span><span class="p">,</span> <span class="n">BroadcastMixin</span><span class="p">):</span>
+</pre></div>
+
+<p>Keeping imports happy</p>
+
+<div class="highlight highlight-python"><pre><span class="kn">from</span> <span class="nn">socketio.mixins</span> <span class="kn">import</span> <span class="n">BroadcastMixin</span>
+</pre></div>
+
+<p>With BroadcastMixin attached to the ChatNamespace, we can update the on_message handler to look like this</p>
+
+<div class="highlight highlight-python"><pre><span class="k">def</span> <span class="nf">on_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s">'got a message: </span><span class="si">%s</span><span class="s">'</span> <span class="o">%</span> <span class="n">message</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">broadcast_event_not_me</span><span class="p">(</span><span class="s">"message"</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span>
+    <span class="k">return</span> <span class="bp">True</span><span class="p">,</span> <span class="n">message</span>
+</pre></div>
+
+<p>We can now update the client to look something like this</p>
+
+<div class="highlight highlight-javascript"><pre><span class="nx">$</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Welcome to Chatzilla"</span><span class="p">);</span>
+    <span class="kd">var</span> <span class="nx">socket</span> <span class="o">=</span> <span class="nx">io</span><span class="p">.</span><span class="nx">connect</span><span class="p">(</span><span class="s1">'/chat'</span><span class="p">);</span>
+    <span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'connect'</span><span class="p">,</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+        <span class="nx">socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">'join'</span><span class="p">,</span> <span class="s1">'Bob'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">joined</span><span class="p">,</span> <span class="nx">name</span><span class="p">){</span>
+            <span class="nx">socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">'message'</span><span class="p">,</span> <span class="s1">'hello this is '</span> <span class="o">+</span> <span class="nx">name</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">sent</span><span class="p">){</span>
+                <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"message sent: "</span><span class="p">,</span> <span class="nx">sent</span><span class="p">);</span>
+            <span class="p">});</span>
+        <span class="p">});</span>
+    <span class="p">});</span>
+
+    <span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'message'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">message</span><span class="p">){</span>
+        <span class="nx">alert</span><span class="p">(</span><span class="s2">"got a message: "</span> <span class="o">+</span> <span class="nx">message</span><span class="p">);</span>
+    <span class="p">});</span>
+<span class="p">});</span>
+</pre></div>
+
+<p>If you now have a couple of tabs open in your browser you'll see an alert box with a greeting from Bob.</p>
+
+<h3>
+<a name="lets-deploy" class="anchor" href="#lets-deploy"><span class="octicon octicon-link"></span></a>Let's deploy</h3>
+
+<p>Tons of users out there are looking forward to experiencing the new version of Chatzilla. Commit your changes, and push. </p>
+
+<h3>
+<a name="before-you-panic-1" class="anchor" href="#before-you-panic-1"><span class="octicon octicon-link"></span></a>Before you panic</h3>
+
+<p>As before, you can grab the code for this chapter <a href="https://github.com/callmephilip/chatzilla/releases/tag/v0.2">here</a>   </p>
+
+<h2>
+<a name="chapter-3--ui" class="anchor" href="#chapter-3--ui"><span class="octicon octicon-link"></span></a>Chapter 3 : UI</h2>
+
+<p>Now that we have a functioning client-server communication model, let's add some UI on top of that so that people can control what data gets sent to the server + get rid of alert popups and display data more gracefully.</p>
+
+<h3>
+<a name="move-some-stuff-around" class="anchor" href="#move-some-stuff-around"><span class="octicon octicon-link"></span></a>Move some stuff around</h3>
+
+<p>Let's isolate client side code in a separate module so we can stop poluting the landing page template</p>
+
+<pre><code>touch static/scripts/chatzilla.js
+</code></pre>
+
+<p>Let's move all the inline js from the landing template to chatzilla.js so it looks like this</p>
+
+<div class="highlight highlight-javascript"><pre><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">$</span><span class="p">,</span><span class="nb">window</span><span class="p">){</span>
+    <span class="nx">$</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Welcome to Chatzilla"</span><span class="p">);</span>
+        <span class="kd">var</span> <span class="nx">socket</span> <span class="o">=</span> <span class="nx">io</span><span class="p">.</span><span class="nx">connect</span><span class="p">(</span><span class="s1">'/chat'</span><span class="p">);</span>
+        <span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'connect'</span><span class="p">,</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+            <span class="nx">socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">'join'</span><span class="p">,</span> <span class="s1">'Bob'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">joined</span><span class="p">,</span> <span class="nx">name</span><span class="p">){</span>
+                <span class="nx">socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">'message'</span><span class="p">,</span> <span class="s1">'hello this is '</span> <span class="o">+</span> <span class="nx">name</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">sent</span><span class="p">){</span>
+                    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"message sent: "</span><span class="p">,</span> <span class="nx">sent</span><span class="p">);</span>
+                <span class="p">});</span>
+            <span class="p">});</span>
+        <span class="p">});</span>
+
+        <span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'message'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">message</span><span class="p">){</span>
+            <span class="nx">alert</span><span class="p">(</span><span class="s2">"got a message: "</span> <span class="o">+</span> <span class="nx">message</span><span class="p">);</span>
+        <span class="p">});</span>
+    <span class="p">});</span>
+<span class="p">}(</span><span class="nx">$</span><span class="p">,</span><span class="nb">window</span><span class="p">));</span>
+</pre></div>
+
+<p>The landing template should now look something like this</p>
+
+<div class="highlight highlight-html"><pre><span class="cp">&lt;!DOCTYPE html&gt;</span>
+<span class="c">&lt;!--[if lt IE 7]&gt; &lt;html class="no-js lt-ie9 lt-ie8 lt-ie7"&gt; &lt;![endif]--&gt;</span>
+<span class="c">&lt;!--[if IE 7]&gt; &lt;html class="no-js lt-ie9 lt-ie8"&gt; &lt;![endif]--&gt;</span>
+<span class="c">&lt;!--[if IE 8]&gt; &lt;html class="no-js lt-ie9"&gt; &lt;![endif]--&gt;</span>
+<span class="c">&lt;!--[if gt IE 8]&gt;&lt;!--&gt;</span> <span class="nt">&lt;html</span> <span class="na">class=</span><span class="s">"no-js"</span><span class="nt">&gt;</span> <span class="c">&lt;!--&lt;![endif]--&gt;</span>
+<span class="nt">&lt;head&gt;</span>
+    <span class="nt">&lt;meta</span> <span class="na">charset=</span><span class="s">"utf-8"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;meta</span> <span class="na">http-equiv=</span><span class="s">"X-UA-Compatible"</span> <span class="na">content=</span><span class="s">"IE=edge,chrome=1"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;meta</span> <span class="na">http-equiv=</span><span class="s">"cache-control"</span> <span class="na">content=</span><span class="s">"no-cache"</span> <span class="nt">/&gt;</span>
+    <span class="nt">&lt;title&gt;</span>Chatzilla<span class="nt">&lt;/title&gt;</span>
+<span class="nt">&lt;/head&gt;</span>
+<span class="nt">&lt;body&gt;</span>
+    <span class="nt">&lt;header&gt;</span>
+        <span class="nt">&lt;h1&gt;</span>Welcome to Chatzilla<span class="nt">&lt;/h1&gt;</span>
+    <span class="nt">&lt;/header&gt;</span>
+    <span class="nt">&lt;footer&gt;</span>
+    <span class="nt">&lt;/footer&gt;</span>
+
+    <span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"http://code.jquery.com/jquery-1.10.1.min.js"</span><span class="nt">&gt;&lt;/script&gt;</span>
+    <span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"{{ url_for('static', filename='scripts/socket.io.min.js') }}"</span><span class="nt">&gt;&lt;/script&gt;</span>
+    <span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"{{ url_for('static', filename='scripts/chatzilla.js') }}"</span><span class="nt">&gt;&lt;/script&gt;</span>
+<span class="nt">&lt;/body&gt;</span>
+<span class="nt">&lt;/html&gt;</span>
+</pre></div>
+
+<h3>
+<a name="add-join-chat-ui" class="anchor" href="#add-join-chat-ui"><span class="octicon octicon-link"></span></a>Add join chat UI</h3>
+
+<p>Let's add a little join chat form in a section between the header and the footer of the landing page</p>
+
+<div class="highlight highlight-html"><pre><span class="nt">&lt;section&gt;</span>
+    <span class="nt">&lt;form</span> <span class="na">class=</span><span class="s">"join-chat"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;label&gt;</span>Type your email to join the chat<span class="nt">&lt;/label&gt;</span>
+        <span class="nt">&lt;input</span> <span class="na">name=</span><span class="s">"email"</span> <span class="na">type=</span><span class="s">"email"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"submit"</span> <span class="na">value=</span><span class="s">"Join"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;/form&gt;</span>
+<span class="nt">&lt;/section&gt;</span>
+</pre></div>
+
+<p>Before we wire the handlers for the form, let's grab [jquery validation plugin])(<a href="http://jqueryvalidation.org/">http://jqueryvalidation.org/</a>) we can put ot good use here. Place this right after the jquery script tag.</p>
+
+<div class="highlight highlight-html"><pre><span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"http://ajax.aspnetcdn.com/ajax/jquery.validate/1.11.1/jquery.validate.min.js"</span><span class="nt">&gt;&lt;/script&gt;</span>
+</pre></div>
+
+<p>Let's update chatzilla.js to handle form submission + validation</p>
+
+<div class="highlight highlight-javascript"><pre><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">$</span><span class="p">,</span><span class="nb">window</span><span class="p">){</span>
+
+
+    <span class="kd">var</span> <span class="nx">bindUI</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
+
+        <span class="nx">$</span><span class="p">(</span><span class="s2">".join-chat"</span><span class="p">).</span><span class="nx">validate</span><span class="p">({</span>
+            <span class="nx">submitHandler</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">form</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="nx">form</span><span class="p">).</span><span class="nx">find</span><span class="p">(</span><span class="s2">"[name='email']"</span><span class="p">).</span><span class="nx">val</span><span class="p">()</span> <span class="o">+</span> 
+                    <span class="s2">" wants to join the chat"</span><span class="p">);</span>
+            <span class="p">}</span>
+        <span class="p">});</span>
+    <span class="p">};</span>
+
+    <span class="kd">var</span> <span class="nx">ready</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
+
+        <span class="nx">bindUI</span><span class="p">();</span>
+
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Welcome to Chatzilla"</span><span class="p">);</span>
+        <span class="kd">var</span> <span class="nx">socket</span> <span class="o">=</span> <span class="nx">io</span><span class="p">.</span><span class="nx">connect</span><span class="p">(</span><span class="s1">'/chat'</span><span class="p">);</span>
+        <span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'connect'</span><span class="p">,</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+            <span class="nx">socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">'join'</span><span class="p">,</span> <span class="s1">'Bob'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">joined</span><span class="p">,</span> <span class="nx">name</span><span class="p">){</span>
+                <span class="nx">socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">'message'</span><span class="p">,</span> <span class="s1">'hello this is '</span> <span class="o">+</span> <span class="nx">name</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">sent</span><span class="p">){</span>
+                    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"message sent: "</span><span class="p">,</span> <span class="nx">sent</span><span class="p">);</span>
+                <span class="p">});</span>
+            <span class="p">});</span>
+        <span class="p">});</span>
+
+        <span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'message'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">message</span><span class="p">){</span>
+            <span class="nx">alert</span><span class="p">(</span><span class="s2">"got a message: "</span> <span class="o">+</span> <span class="nx">message</span><span class="p">);</span>
+        <span class="p">});</span>
+    <span class="p">};</span>
+
+
+
+    <span class="nx">$</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span> <span class="nx">ready</span><span class="p">();</span> <span class="p">});</span>
+
+<span class="p">}(</span><span class="nx">$</span><span class="p">,</span><span class="nb">window</span><span class="p">));</span>
+</pre></div>
+
+<p>Let's also start organizing our socket interactions so we can easily call our chat server from various UI event handlers. Here's how this little submodule could look like (with 2 methods for now):</p>
+
+<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">chatAPI</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="nx">connect</span> <span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">done</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">socket</span> <span class="o">=</span> <span class="nx">io</span><span class="p">.</span><span class="nx">connect</span><span class="p">(</span><span class="s1">'/chat'</span><span class="p">);</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'connect'</span><span class="p">,</span> <span class="nx">done</span><span class="p">);</span>
+    <span class="p">},</span>
+
+    <span class="nx">join</span> <span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">email</span><span class="p">,</span> <span class="nx">onJoin</span><span class="p">){</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">'join'</span><span class="p">,</span> <span class="nx">email</span><span class="p">,</span> <span class="nx">onJoin</span><span class="p">);</span>
+    <span class="p">}</span>
+
+<span class="p">};</span>  
+</pre></div>
+
+<p>And as we update the rest of chatzilla.js: </p>
+
+<div class="highlight highlight-javascript"><pre><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">$</span><span class="p">,</span><span class="nb">window</span><span class="p">){</span>
+
+    <span class="kd">var</span> <span class="nx">chatAPI</span> <span class="o">=</span> <span class="p">{</span>
+
+        <span class="nx">connect</span> <span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">done</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">socket</span> <span class="o">=</span> <span class="nx">io</span><span class="p">.</span><span class="nx">connect</span><span class="p">(</span><span class="s1">'/chat'</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'connect'</span><span class="p">,</span> <span class="nx">done</span><span class="p">);</span>
+        <span class="p">},</span>
+
+        <span class="nx">join</span> <span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">email</span><span class="p">,</span> <span class="nx">onJoin</span><span class="p">){</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">'join'</span><span class="p">,</span> <span class="nx">email</span><span class="p">,</span> <span class="nx">onJoin</span><span class="p">);</span>
+        <span class="p">}</span>
+
+    <span class="p">};</span>  
+
+    <span class="kd">var</span> <span class="nx">bindUI</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
+        <span class="nx">$</span><span class="p">(</span><span class="s2">".join-chat"</span><span class="p">).</span><span class="nx">validate</span><span class="p">({</span>
+            <span class="nx">submitHandler</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">form</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">chatAPI</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="nx">form</span><span class="p">).</span><span class="nx">find</span><span class="p">(</span><span class="s2">"[name='email']"</span><span class="p">).</span><span class="nx">val</span><span class="p">(),</span> 
+                    <span class="kd">function</span><span class="p">(</span><span class="nx">joined</span><span class="p">,</span> <span class="nx">name</span><span class="p">){</span>
+                        <span class="k">if</span><span class="p">(</span><span class="nx">joined</span><span class="p">){</span>
+                            <span class="nx">alert</span><span class="p">(</span><span class="s2">"You've joined Chatzilla"</span><span class="p">);</span>
+                        <span class="p">}</span>
+                    <span class="p">});</span>
+            <span class="p">}</span>
+        <span class="p">});</span>
+    <span class="p">};</span>
+
+    <span class="kd">var</span> <span class="nx">ready</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
+        <span class="nx">bindUI</span><span class="p">();</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Welcome to Chatzilla"</span><span class="p">);</span>
+        <span class="nx">chatAPI</span><span class="p">.</span><span class="nx">connect</span><span class="p">(</span><span class="kd">function</span><span class="p">(){});</span>
+    <span class="p">};</span>
+
+
+
+    <span class="nx">$</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span> <span class="nx">ready</span><span class="p">();</span> <span class="p">});</span>
+
+<span class="p">}(</span><span class="nx">$</span><span class="p">,</span><span class="nb">window</span><span class="p">));</span>
+</pre></div>
+
+<p>Commit what you have and let's move on.</p>
+
+<h3>
+<a name="add-send-message-ui" class="anchor" href="#add-send-message-ui"><span class="octicon octicon-link"></span></a>Add Send Message UI</h3>
+
+<p>Once the connection is established, let's hide the join form and show some kind of message composer:</p>
+
+<div class="highlight highlight-html"><pre><span class="nt">&lt;form</span> <span class="na">class=</span><span class="s">"compose-message-form"</span> <span class="na">style=</span><span class="s">"display:none;"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;textarea</span> <span class="na">name=</span><span class="s">"message"</span> <span class="na">required</span><span class="nt">&gt;&lt;/textarea&gt;</span>
+    <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"submit"</span> <span class="na">value=</span><span class="s">"send"</span><span class="nt">&gt;</span>
+<span class="nt">&lt;/form&gt;</span>
+</pre></div>
+
+<p>Our chatAPI module will need a new method (sendMessage): </p>
+
+<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">chatAPI</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="nx">connect</span> <span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">done</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">socket</span> <span class="o">=</span> <span class="nx">io</span><span class="p">.</span><span class="nx">connect</span><span class="p">(</span><span class="s1">'/chat'</span><span class="p">);</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'connect'</span><span class="p">,</span> <span class="nx">done</span><span class="p">);</span>
+    <span class="p">},</span>
+
+    <span class="nx">join</span> <span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">email</span><span class="p">,</span> <span class="nx">onJoin</span><span class="p">){</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">'join'</span><span class="p">,</span> <span class="nx">email</span><span class="p">,</span> <span class="nx">onJoin</span><span class="p">);</span>
+    <span class="p">},</span>
+
+    <span class="nx">sendMessage</span> <span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">message</span><span class="p">,</span> <span class="nx">onSent</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">'message'</span><span class="p">,</span> <span class="nx">message</span><span class="p">,</span> <span class="nx">onSent</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">};</span>  
+</pre></div>
+
+<p>And here's what chatzilla.js looks like now </p>
+
+<div class="highlight highlight-javascript"><pre><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">$</span><span class="p">,</span><span class="nb">window</span><span class="p">){</span>
+
+    <span class="kd">var</span> <span class="nx">chatAPI</span> <span class="o">=</span> <span class="p">{</span>
+
+        <span class="nx">connect</span> <span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">done</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">socket</span> <span class="o">=</span> <span class="nx">io</span><span class="p">.</span><span class="nx">connect</span><span class="p">(</span><span class="s1">'/chat'</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'connect'</span><span class="p">,</span> <span class="nx">done</span><span class="p">);</span>
+        <span class="p">},</span>
+
+        <span class="nx">join</span> <span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">email</span><span class="p">,</span> <span class="nx">onJoin</span><span class="p">){</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">'join'</span><span class="p">,</span> <span class="nx">email</span><span class="p">,</span> <span class="nx">onJoin</span><span class="p">);</span>
+        <span class="p">},</span>
+
+        <span class="nx">sendMessage</span> <span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">message</span><span class="p">,</span> <span class="nx">onSent</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">'message'</span><span class="p">,</span> <span class="nx">message</span><span class="p">,</span> <span class="nx">onSent</span><span class="p">);</span>
+        <span class="p">}</span>
+
+    <span class="p">};</span>  
+
+    <span class="kd">var</span> <span class="nx">bindUI</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
+        <span class="nx">$</span><span class="p">(</span><span class="s2">".join-chat"</span><span class="p">).</span><span class="nx">validate</span><span class="p">({</span>
+            <span class="nx">submitHandler</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">form</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">chatAPI</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="nx">form</span><span class="p">).</span><span class="nx">find</span><span class="p">(</span><span class="s2">"[name='email']"</span><span class="p">).</span><span class="nx">val</span><span class="p">(),</span> 
+                    <span class="kd">function</span><span class="p">(</span><span class="nx">joined</span><span class="p">,</span> <span class="nx">name</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="k">if</span><span class="p">(</span><span class="nx">joined</span><span class="p">){</span>
+                            <span class="nx">alert</span><span class="p">(</span><span class="s2">"You've joined Chatzilla"</span><span class="p">);</span>
+                            <span class="nx">$</span><span class="p">(</span><span class="nx">form</span><span class="p">).</span><span class="nx">hide</span><span class="p">();</span>
+                            <span class="nx">$</span><span class="p">(</span><span class="s2">".compose-message-form"</span><span class="p">).</span><span class="nx">show</span><span class="p">();</span>
+                        <span class="p">}</span>
+                    <span class="p">});</span>
+            <span class="p">}</span>
+        <span class="p">});</span>
+
+        <span class="nx">$</span><span class="p">(</span><span class="s2">".compose-message-form"</span><span class="p">).</span><span class="nx">validate</span><span class="p">({</span>
+            <span class="nx">submitHandler</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">form</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">chatAPI</span><span class="p">.</span><span class="nx">sendMessage</span><span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="nx">form</span><span class="p">).</span><span class="nx">find</span><span class="p">(</span><span class="s2">"[name='message']"</span><span class="p">).</span><span class="nx">val</span><span class="p">(),</span>                     <span class="kd">function</span><span class="p">(</span><span class="nx">sent</span><span class="p">,</span><span class="nx">message</span><span class="p">){</span>
+                        <span class="k">if</span><span class="p">(</span><span class="nx">sent</span><span class="p">){</span>
+                            <span class="nx">alert</span><span class="p">(</span><span class="s2">"Your message was sent"</span><span class="p">);</span>
+                        <span class="p">}</span>
+                    <span class="p">}</span>
+                <span class="p">);</span>
+            <span class="p">}</span>
+        <span class="p">});</span>
+    <span class="p">};</span>
+
+    <span class="kd">var</span> <span class="nx">ready</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
+        <span class="nx">bindUI</span><span class="p">();</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Welcome to Chatzilla"</span><span class="p">);</span>
+        <span class="nx">chatAPI</span><span class="p">.</span><span class="nx">connect</span><span class="p">(</span><span class="kd">function</span><span class="p">(){});</span>
+    <span class="p">};</span>
+
+
+
+    <span class="nx">$</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span> <span class="nx">ready</span><span class="p">();</span> <span class="p">});</span>
+
+<span class="p">}(</span><span class="nx">$</span><span class="p">,</span><span class="nb">window</span><span class="p">));</span>
+</pre></div>
+
+<p>Notice, how we are handling the message form in a similar way + we toggle visibility on both forms after joining chat.</p>
+
+<p>Commit what you have and let's move on.</p>
+
+<h2>
+<a name="add-message-list-ui" class="anchor" href="#add-message-list-ui"><span class="octicon octicon-link"></span></a>Add Message List UI</h2>
+
+<p>As any respectable Chat application out there Chatzilla needs a list of messages that people are exchanging. Let's build it. </p>
+
+<p>First, let's figure out how this impacts our chatApi module. We'll have chatAPI trigger a handler once a new message is received: </p>
+
+<div class="highlight highlight-javascript"><pre>
+<span class="nx">connect</span> <span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">done</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="kd">var</span> <span class="nx">that</span> <span class="o">=</span> <span class="k">this</span><span class="p">;</span>
+
+    <span class="k">this</span><span class="p">.</span><span class="nx">socket</span> <span class="o">=</span> <span class="nx">io</span><span class="p">.</span><span class="nx">connect</span><span class="p">(</span><span class="s1">'/chat'</span><span class="p">);</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'connect'</span><span class="p">,</span> <span class="nx">done</span><span class="p">);</span>
+
+    <span class="k">this</span><span class="p">.</span><span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'message'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">message</span><span class="p">){</span>
+        <span class="k">if</span><span class="p">(</span><span class="nx">that</span><span class="p">.</span><span class="nx">onMessage</span><span class="p">){</span>
+            <span class="nx">that</span><span class="p">.</span><span class="nx">onMessage</span><span class="p">(</span><span class="nx">message</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">});</span>
+<span class="p">},</span>
+
+</pre></div>
+
+<p>And then in the bindUI, we can do the following:</p>
+
+<div class="highlight highlight-javascript"><pre><span class="nx">chatAPI</span><span class="p">.</span><span class="nx">onMessage</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">message</span><span class="p">){</span>
+    <span class="nx">alert</span><span class="p">(</span><span class="s2">"you got a message: "</span> <span class="o">+</span> <span class="nx">message</span><span class="p">);</span>
+<span class="p">};</span>
+</pre></div>
+
+<p>chatzilla.js now looks like this</p>
+
+<div class="highlight highlight-javascript"><pre><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">$</span><span class="p">,</span><span class="nb">window</span><span class="p">){</span>
+
+    <span class="kd">var</span> <span class="nx">chatAPI</span> <span class="o">=</span> <span class="p">{</span>
+
+        <span class="nx">connect</span> <span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">done</span><span class="p">)</span> <span class="p">{</span>
+
+            <span class="kd">var</span> <span class="nx">that</span> <span class="o">=</span> <span class="k">this</span><span class="p">;</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">socket</span> <span class="o">=</span> <span class="nx">io</span><span class="p">.</span><span class="nx">connect</span><span class="p">(</span><span class="s1">'/chat'</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'connect'</span><span class="p">,</span> <span class="nx">done</span><span class="p">);</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'message'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">message</span><span class="p">){</span>
+                <span class="k">if</span><span class="p">(</span><span class="nx">that</span><span class="p">.</span><span class="nx">onMessage</span><span class="p">){</span>
+                    <span class="nx">that</span><span class="p">.</span><span class="nx">onMessage</span><span class="p">(</span><span class="nx">message</span><span class="p">);</span>
+                <span class="p">}</span>
+            <span class="p">});</span>
+        <span class="p">},</span>
+
+        <span class="nx">join</span> <span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">email</span><span class="p">,</span> <span class="nx">onJoin</span><span class="p">){</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">'join'</span><span class="p">,</span> <span class="nx">email</span><span class="p">,</span> <span class="nx">onJoin</span><span class="p">);</span>
+        <span class="p">},</span>
+
+        <span class="nx">sendMessage</span> <span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">message</span><span class="p">,</span> <span class="nx">onSent</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">'message'</span><span class="p">,</span> <span class="nx">message</span><span class="p">,</span> <span class="nx">onSent</span><span class="p">);</span>
+        <span class="p">}</span>
+
+    <span class="p">};</span>  
+
+    <span class="kd">var</span> <span class="nx">bindUI</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
+
+        <span class="nx">$</span><span class="p">(</span><span class="s2">".join-chat"</span><span class="p">).</span><span class="nx">validate</span><span class="p">({</span>
+            <span class="nx">submitHandler</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">form</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">chatAPI</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="nx">form</span><span class="p">).</span><span class="nx">find</span><span class="p">(</span><span class="s2">"[name='email']"</span><span class="p">).</span><span class="nx">val</span><span class="p">(),</span> 
+                    <span class="kd">function</span><span class="p">(</span><span class="nx">joined</span><span class="p">,</span> <span class="nx">name</span><span class="p">){</span>
+                        <span class="k">if</span><span class="p">(</span><span class="nx">joined</span><span class="p">){</span>
+                            <span class="nx">alert</span><span class="p">(</span><span class="s2">"You've joined Chatzilla"</span><span class="p">);</span>
+                            <span class="nx">$</span><span class="p">(</span><span class="nx">form</span><span class="p">).</span><span class="nx">hide</span><span class="p">();</span>
+                            <span class="nx">$</span><span class="p">(</span><span class="s2">".compose-message-form"</span><span class="p">).</span><span class="nx">show</span><span class="p">();</span>
+                        <span class="p">}</span>
+                    <span class="p">});</span>
+            <span class="p">}</span>
+        <span class="p">});</span>
+
+        <span class="nx">$</span><span class="p">(</span><span class="s2">".compose-message-form"</span><span class="p">).</span><span class="nx">validate</span><span class="p">({</span>
+            <span class="nx">submitHandler</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">form</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">chatAPI</span><span class="p">.</span><span class="nx">sendMessage</span><span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="nx">form</span><span class="p">).</span><span class="nx">find</span><span class="p">(</span><span class="s2">"[name='message']"</span><span class="p">).</span><span class="nx">val</span><span class="p">(),</span> 
+                    <span class="kd">function</span><span class="p">(</span><span class="nx">sent</span><span class="p">,</span><span class="nx">message</span><span class="p">){</span>
+                        <span class="k">if</span><span class="p">(</span><span class="nx">sent</span><span class="p">){</span>
+                            <span class="nx">alert</span><span class="p">(</span><span class="s2">"Your message was sent"</span><span class="p">);</span>
+                        <span class="p">}</span>
+                    <span class="p">});</span>
+            <span class="p">}</span>
+        <span class="p">});</span>
+
+        <span class="nx">chatAPI</span><span class="p">.</span><span class="nx">onMessage</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">message</span><span class="p">){</span>
+            <span class="nx">alert</span><span class="p">(</span><span class="s2">"you got a message: "</span> <span class="o">+</span> <span class="nx">message</span><span class="p">);</span>
+        <span class="p">};</span>
+
+    <span class="p">};</span>
+
+    <span class="kd">var</span> <span class="nx">ready</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
+        <span class="nx">bindUI</span><span class="p">();</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Welcome to Chatzilla"</span><span class="p">);</span>
+        <span class="nx">chatAPI</span><span class="p">.</span><span class="nx">connect</span><span class="p">(</span><span class="kd">function</span><span class="p">(){});</span>
+    <span class="p">};</span>
+
+
+
+    <span class="nx">$</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span> <span class="nx">ready</span><span class="p">();</span> <span class="p">});</span>
+
+<span class="p">}(</span><span class="nx">$</span><span class="p">,</span><span class="nb">window</span><span class="p">));</span>
+</pre></div>
+
+<p>Let's get rid of the alerts by creating a container for the messages in the landing.html. After we update the section of the landing.html it looks like this </p>
+
+<div class="highlight highlight-html"><pre><span class="nt">&lt;section&gt;</span>
+    <span class="nt">&lt;form</span> <span class="na">class=</span><span class="s">"join-chat"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;label&gt;</span>Type your email to join the chat<span class="nt">&lt;/label&gt;</span>
+        <span class="nt">&lt;input</span> <span class="na">name=</span><span class="s">"email"</span> <span class="na">type=</span><span class="s">"email"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"submit"</span> <span class="na">value=</span><span class="s">"Join"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;/form&gt;</span>
+
+    <span class="nt">&lt;ul</span> <span class="na">class=</span><span class="s">"messages"</span> <span class="na">style=</span><span class="s">"display:none;"</span><span class="nt">&gt;&lt;/ul&gt;</span>
+
+    <span class="nt">&lt;form</span> <span class="na">class=</span><span class="s">"compose-message-form"</span> <span class="na">style=</span><span class="s">"display:none;"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;textarea</span> <span class="na">name=</span><span class="s">"message"</span> <span class="na">required</span><span class="nt">&gt;&lt;/textarea&gt;</span>
+        <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"submit"</span> <span class="na">value=</span><span class="s">"send"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;/form&gt;</span>
+<span class="nt">&lt;/section&gt;</span>
+</pre></div>
+
+<p>Notice that the message list is initially invisible. We'll show it once a person joins the chat (just like with the message form)</p>
+
+<div class="highlight highlight-javascript"><pre><span class="nx">$</span><span class="p">(</span><span class="s2">".messages"</span><span class="p">).</span><span class="nx">show</span><span class="p">();</span>
+</pre></div>
+
+<p>Let's update the onMessage handler so that it displays the message within the list: </p>
+
+<div class="highlight highlight-javascript"><pre><span class="nx">chatAPI</span><span class="p">.</span><span class="nx">onMessage</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">message</span><span class="p">){</span>
+    <span class="nx">$</span><span class="p">(</span><span class="s2">".messages"</span><span class="p">).</span><span class="nx">append</span><span class="p">(</span>
+        <span class="nx">jQuery</span><span class="p">(</span><span class="s2">"&lt;li&gt;"</span><span class="p">).</span><span class="nx">html</span><span class="p">(</span><span class="nx">message</span><span class="p">)</span>
+    <span class="p">);</span>
+<span class="p">};</span>
+</pre></div>
+
+<p>Checkout the result (2+ tabs). Commit, grab a drink.</p>
+
+<h2>
+<a name="more-context" class="anchor" href="#more-context"><span class="octicon octicon-link"></span></a>More context</h2>
+
+<p>Current version of Chatzilla has a number of issues. The most noticeable one is that you can't really tell who the messages you receive come from. Let's fix that.</p>
+
+<h3>
+<a name="session" class="anchor" href="#session"><span class="octicon octicon-link"></span></a>Session</h3>
+
+<p>We can take advantage of session data to keep track of the message sender. Let's modify on_join handler for the ChatNamespace in chatzilla.py</p>
+
+<div class="highlight highlight-python"><pre><span class="k">def</span> <span class="nf">on_join</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">email</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s">"</span><span class="si">%s</span><span class="s"> joined chat"</span> <span class="o">%</span> <span class="n">email</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">[</span><span class="s">'email'</span><span class="p">]</span> <span class="o">=</span> <span class="n">email</span>
+    <span class="k">return</span> <span class="bp">True</span><span class="p">,</span> <span class="n">email</span>
+</pre></div>
+
+<p>This will allow to keep track of who's sending a message and we can use this data when we broadcast messages to others in the chat</p>
+
+<div class="highlight highlight-python"><pre><span class="k">def</span> <span class="nf">on_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s">'got a message: </span><span class="si">%s</span><span class="s">'</span> <span class="o">%</span> <span class="n">message</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">broadcast_event_not_me</span><span class="p">(</span><span class="s">"message"</span><span class="p">,{</span> 
+        <span class="s">"sender"</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">[</span><span class="s">"email"</span><span class="p">],</span> 
+        <span class="s">"content"</span> <span class="p">:</span> <span class="n">message</span><span class="p">})</span>
+    <span class="k">return</span> <span class="bp">True</span><span class="p">,</span> <span class="n">message</span>
+</pre></div>
+
+<h3>
+<a name="tell-the-client" class="anchor" href="#tell-the-client"><span class="octicon octicon-link"></span></a>Tell the client</h3>
+
+<p>We can now update chatzilla.js to take advantage of this additional information</p>
+
+<div class="highlight highlight-javascript"><pre><span class="nx">chatAPI</span><span class="p">.</span><span class="nx">onMessage</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">message</span><span class="p">){</span>
+    <span class="nx">$</span><span class="p">(</span><span class="s2">".messages"</span><span class="p">).</span><span class="nx">append</span><span class="p">(</span>
+        <span class="nx">jQuery</span><span class="p">(</span><span class="s2">"&lt;li&gt;"</span><span class="p">).</span><span class="nx">html</span><span class="p">(</span>
+            <span class="s2">"&lt;b&gt;"</span> <span class="o">+</span> <span class="nx">message</span><span class="p">.</span><span class="nx">sender</span> <span class="o">+</span> <span class="s2">"&lt;/b&gt;: "</span> <span class="o">+</span> <span class="nx">message</span><span class="p">.</span><span class="nx">content</span> 
+        <span class="p">)</span>
+    <span class="p">);</span>
+<span class="p">};</span>
+</pre></div>
+
+<p>Let's also make sure your own message are added to the list once sent:</p>
+
+<div class="highlight highlight-javascript"><pre><span class="nx">$</span><span class="p">(</span><span class="s2">".compose-message-form"</span><span class="p">).</span><span class="nx">validate</span><span class="p">({</span>
+            <span class="nx">submitHandler</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">form</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">chatAPI</span><span class="p">.</span><span class="nx">sendMessage</span><span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="nx">form</span><span class="p">).</span><span class="nx">find</span><span class="p">(</span><span class="s2">"[name='message']"</span><span class="p">).</span><span class="nx">val</span><span class="p">(),</span>                     <span class="kd">function</span><span class="p">(</span><span class="nx">sent</span><span class="p">,</span><span class="nx">message</span><span class="p">){</span>
+                        <span class="k">if</span><span class="p">(</span><span class="nx">sent</span><span class="p">){</span>
+                            <span class="nx">$</span><span class="p">(</span><span class="s2">".messages"</span><span class="p">).</span><span class="nx">append</span><span class="p">(</span>
+                                <span class="nx">jQuery</span><span class="p">(</span><span class="s2">"&lt;li&gt;"</span><span class="p">).</span><span class="nx">html</span><span class="p">(</span>
+                                    <span class="s2">"&lt;b&gt;Me&lt;/b&gt;: "</span> <span class="o">+</span> <span class="nx">message</span>
+                                <span class="p">)</span>
+                            <span class="p">);</span>
+                        <span class="p">}</span>
+                    <span class="p">});</span>
+            <span class="p">}</span>
+        <span class="p">});</span>
+</pre></div>
+
+<p>Commit what you have. And push what you have to heroku.</p>
+
+<pre><code>git push heroku master
+</code></pre>
+
+<h3>
+<a name="before-you-panic-2" class="anchor" href="#before-you-panic-2"><span class="octicon octicon-link"></span></a>Before you panic</h3>
+
+<p>All the code for chapter 3 is <a href="https://github.com/callmephilip/chatzilla/releases/tag/v0.3">here</a> if you need it.</p>
+
+<h2>
+<a name="chapter-4-more-ui" class="anchor" href="#chapter-4-more-ui"><span class="octicon octicon-link"></span></a>Chapter 4: More UI</h2>
+
+<p>The final version of the app is available <a href="http://chatzilla.herokuapp.com/">here</a>. You'll notice it's quite different from where we left in Chapter 3. All the code is available <a href="https://github.com/callmephilip/chatzilla">here</a>.</p>
+      </section>
+    </div>
+    <footer>
+      <p>Project maintained by <a href="https://github.com/callmephilip">callmephilip</a></p>
+      <p>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></p>
+    </footer>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+    
+  </body>
+</html>
