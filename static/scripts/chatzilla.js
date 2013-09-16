@@ -1,7 +1,8 @@
 (function($,jQuery,window){
 	
 	var templates = {
-		chatMessage : null
+		chatMessage : null,
+		statsBar : null
 	};
 
 
@@ -37,6 +38,12 @@
 					that.onMessage(message);
 				}
 			});
+
+			this.socket.on('stats', function(stats){
+				if(that.onStats){
+					that.onStats(stats);
+				}
+			});
 		},
 
 		join : function(email, onJoin){
@@ -66,6 +73,7 @@
 						$(".chat-panel").addClass("animated slideInRight");
 						$(".messages-wrapper").addClass("animated slideInLeft");
 						$(".splash").addClass("animated fadeOutUp");
+						$(".stats-bar").addClass("animated fadeInDown");
 					}
 				});
 			},
@@ -121,12 +129,28 @@
 			);
 		};
 
+		chatAPI.onStats = function(stats){
+			console.log("got stats", stats);
+
+			stats.peopleCount = stats.people.length;
+			for(var i=0; i<stats.people.length; i++){
+				stats.people[i] = {
+					email : stats.people[i],
+					image : tools.getGravatarUrl(stats.people[i])
+				};
+			}
+
+			$(".stats-bar").html(
+				templates.statsBar(stats)
+			);
+		};
+
 	};
 
 	var ready = function(){
 
 		templates.chatMessage = Handlebars.compile($("#temlate-chat-message").html());
-
+		templates.statsBar = Handlebars.compile($("#template-stats-bar").html());
 
 		bindUI();
 		console.log("Welcome to Chatzilla");

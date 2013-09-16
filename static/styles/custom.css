@@ -147,3 +147,16 @@ label.error {
 .chat-message-wrapper p {
   padding-top:5px;
 }
+
+.stats-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 10000;
+  right: 0;
+  border-bottom: solid 1px #ccc;
+  background-color: #fff;
+  padding: 5px;
+  -webkit-transform : translate(0,-100%); 
+  -moz-transform : translate(0,-100%);
+}
