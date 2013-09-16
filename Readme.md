@@ -126,7 +126,10 @@ from socketio.server import SocketIOServer
 monkey.patch_all()
 
 if __name__ == '__main__':
-    SocketIOServer(('', application.config['PORT']), application, resource="socket.io").serve_forever()
+    SocketIOServer(
+    	('', application.config['PORT']), 
+    	application,
+    	resource="socket.io").serve_forever()
 ```
 
 ### Procfile : Flask meets Heroku 
@@ -295,7 +298,9 @@ mkdir static
 cd static
 mkdir scripts
 cd scripts
-curl -O https://dl.dropboxusercontent.com/u/9224326/www/chatzilla/scripts/socket.io.min.js -O https://dl.dropboxusercontent.com/u/9224326/www/chatzilla/scripts/WebSocketMain.swf -O https://dl.dropboxusercontent.com/u/9224326/www/chatzilla/scripts/WebSocketMainInsecure.swf
+curl -O https://dl.dropboxusercontent.com/u/9224326/www/chatzilla/scripts/socket.io.min.js 
+-O https://dl.dropboxusercontent.com/u/9224326/www/chatzilla/scripts/WebSocketMain.swf 
+-O https://dl.dropboxusercontent.com/u/9224326/www/chatzilla/scripts/WebSocketMainInsecure.swf
 ``` 
 
 Let's update templates/landing.html to include socket.io
@@ -532,7 +537,8 @@ Let's update chatzilla.js to handle form submission + validation
 		
 		$(".join-chat").validate({
 			submitHandler: function(form) {
-				console.log($(form).find("[name='email']").val() + " wants to join the chat");
+				console.log($(form).find("[name='email']").val() + 
+					" wants to join the chat");
 			}
 		});
 	};
@@ -600,11 +606,12 @@ And as we update the rest of chatzilla.js:
 	var bindUI = function(){
 		$(".join-chat").validate({
 			submitHandler: function(form) {
-				chatAPI.join($(form).find("[name='email']").val(), function(joined, name){
-					if(joined){
-						alert("You've joined Chatzilla");
-					}
-				});
+				chatAPI.join($(form).find("[name='email']").val(), 
+					function(joined, name){
+						if(joined){
+							alert("You've joined Chatzilla");
+						}
+					});
 			}
 		});
 	};
@@ -679,13 +686,14 @@ And here's what chatzilla.js looks like now
 	var bindUI = function(){
 		$(".join-chat").validate({
 			submitHandler: function(form) {
-				chatAPI.join($(form).find("[name='email']").val(), function(joined, name)				{
-					if(joined){
-						alert("You've joined Chatzilla");
-						$(form).hide();
-						$(".compose-message-form").show();
-					}
-				});
+				chatAPI.join($(form).find("[name='email']").val(), 
+					function(joined, name) {
+						if(joined){
+							alert("You've joined Chatzilla");
+							$(form).hide();
+							$(".compose-message-form").show();
+						}
+					});
 			}
 		});
 
@@ -785,23 +793,25 @@ chatzilla.js now looks like this
 
 		$(".join-chat").validate({
 			submitHandler: function(form) {
-				chatAPI.join($(form).find("[name='email']").val(), function(joined, name){
-					if(joined){
-						alert("You've joined Chatzilla");
-						$(form).hide();
-						$(".compose-message-form").show();
-					}
-				});
+				chatAPI.join($(form).find("[name='email']").val(), 
+					function(joined, name){
+						if(joined){
+							alert("You've joined Chatzilla");
+							$(form).hide();
+							$(".compose-message-form").show();
+						}
+					});
 			}
 		});
 
 		$(".compose-message-form").validate({
 			submitHandler: function(form) {
-				chatAPI.sendMessage($(form).find("[name='message']").val(), function(sent,message){
-					if(sent){
-						alert("Your message was sent");
-					}
-				});
+				chatAPI.sendMessage($(form).find("[name='message']").val(), 
+					function(sent,message){
+						if(sent){
+							alert("Your message was sent");
+						}
+					});
 			}
 		});
 
@@ -881,7 +891,9 @@ This will allow to keep track of who's sending a message and we can use this dat
 ```python
 def on_message(self, message):
 	self.log('got a message: %s' % message)
-    self.broadcast_event_not_me("message",{ "sender" : self.session["email"], "content" : message})
+    self.broadcast_event_not_me("message",{ 
+    	"sender" : self.session["email"], 
+    	"content" : message})
     return True, message
 ```
 ### Tell the client
