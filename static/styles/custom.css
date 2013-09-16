@@ -94,7 +94,7 @@ label.error {
 /* landing */
 
 .splash {
-  background-color: #ccc; /* url('http://placehold.it/730x500/#000'); */
+  background-color: #ccc;
   background-repeat: no-repeat;
   min-height: 500px;
   position: relative;
