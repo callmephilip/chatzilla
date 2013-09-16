@@ -1,5 +1,28 @@
 (function($,jQuery,window){
 	
+	var templates = {
+		chatMessage : null
+	};
+
+
+	var globals = {
+		myPicture : null
+	};
+
+	var tools = {
+		getGravatarUrl : function(email){
+        	return "http://www.gravatar.com/avatar/" + md5(email.trim().toLowerCase());
+    	},
+
+    	getRandomArbitary : function(min, max) {
+		    return Math.floor(Math.random() * (max - min + 1)) + min;
+		},
+
+		getRandomListElement : function(list){
+			return list[this.getRandomArbitary(0,list.length-1)];
+		}
+	};
+
 	var chatAPI = {
 
 		connect : function(done) {
@@ -28,17 +51,25 @@
 
 	var bindUI = function(){
 
+
 		$(".join-chat").validate({
 			submitHandler: function(form) {
 
+				var email = $(form).find("[name='email']").val();
+
 				$(".join-chat").find(".btn").attr("disabled","disabled");
 
-				chatAPI.join($(form).find("[name='email']").val(), function(joined, name){
+				globals.myPicture = tools.getGravatarUrl(email);
+
+				chatAPI.join(email, function(joined, name){
 					if(joined){
-						alert("You've joined Chatzilla");
 						$(form).hide();
-						$(".compose-message-form").show();
-						$(".messages").show();
+						// $(".compose-message-form").show();
+						// $(".messages").show();
+
+						$(".chat-panel").addClass("animated slideInRight");
+						$(".messages-wrapper").addClass("animated slideInLeft");
+						$(".splash").addClass("animated fadeOutUp");
 					}
 				});
 			},
@@ -50,29 +81,64 @@
 
 		$(".compose-message-form").validate({
 			submitHandler: function(form) {
+
+				$(".compose-message-form").find(".btn").attr("disabled","disabled");
+
 				chatAPI.sendMessage($(form).find("[name='message']").val(), function(sent,message){
 					if(sent){
+						$(".compose-message-form").find(".btn").removeAttr("disabled");
+						$(".compose-message-form").find("textarea").val("");
+						// $(".messages").append(
+						// 	jQuery("<li>").html(
+						// 		"<b>Me</b>: " + message
+						// 	).addClass("list-group-item").append(
+						// 		jQuery("<img>").attr("src", globals.myPicture)
+						// 	)
+						// );
+
 						$(".messages").append(
-							jQuery("<li>").html(
-								"<b>Me</b>: " + message
-							)
+							templates.chatMessage({
+								author : "Me",
+								message : message,
+								avatarUrl : globals.myPicture,
+								labelClass : tools.getRandomListElement(["label-default","label-primary","label-success","label-info","label-warning","label-danger"])
+							})
 						);
+
 					}
 				});
+			},
+
+			invalidHandler: function(event, validator){
+				$("[name='message']").parent().addClass("has-error");
 			}
 		});
 
 		chatAPI.onMessage = function(message){
+			// $(".messages").append(
+			// 	jQuery("<li>").html(
+			// 		"<b>" + message.sender + "</b>: " + message.content 
+			// 	).addClass("list-group-item").append(
+			// 		jQuery("<img>").attr("src", tool.getGravatarUrl(message.sender))
+			// 	)
+			// );
 			$(".messages").append(
-				jQuery("<li>").html(
-					"<b>" + message.sender + "</b>: " + message.content 
-				)
+				templates.chatMessage({
+					author : message.sender,
+					message : message.content,
+					avatarUrl : tools.getGravatarUrl(message.sender),
+					labelClass : tools.getRandomListElement(["label-default","label-primary","label-success","label-info","label-warning","label-danger"])
+				})
 			);
 		};
 
 	};
 
 	var ready = function(){
+
+		templates.chatMessage = Handlebars.compile($("#temlate-chat-message").html());
+
+
 		bindUI();
 		console.log("Welcome to Chatzilla");
 		chatAPI.connect(function(){});
