@@ -12,6 +12,11 @@ application.config['PORT'] = 5000
 
 
 class ChatNamespace(BaseNamespace, BroadcastMixin):
+    
+    stats = {
+        "people" : []
+    }
+
     def initialize(self):
         self.logger = application.logger
         self.log("Socketio session started")
@@ -19,15 +24,29 @@ class ChatNamespace(BaseNamespace, BroadcastMixin):
     def log(self, message):
         self.logger.info("[{0}] {1}".format(self.socket.sessid, message))
 
+    def report_stats(self):
+        self.broadcast_event("stats",self.stats)
+
     def recv_connect(self):
         self.log("New connection")
 
     def recv_disconnect(self):
         self.log("Client disconnected")
+        
+        if self.session.has_key("email"):
+            email = self.session['email']
+            self.stats["people"] = filter(lambda e : e != email, self.stats["people"])
+            self.report_stats()
 
     def on_join(self, email):
         self.log("%s joined chat" % email)
         self.session['email'] = email
+
+        if not email in self.stats["people"]:
+            self.stats["people"].append(email) 
+
+        self.report_stats()
+
         return True, email
 
     def on_message(self, message):
