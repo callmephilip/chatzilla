@@ -128,11 +128,13 @@ label.error {
   -webkit-transform : translate(-1000%,0); 
   -moz-transform : translate(-1000%,0);
   position: absolute;
-  bottom: 185px;
+  bottom: 157px;
   left: 0;
   width: 102%;
   overflow: hidden;
   padding-left: 15px;
+  max-height: 80%;
+  overflow:scroll; 
 }
 
 .avatar-wrapper {

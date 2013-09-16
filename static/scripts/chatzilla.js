@@ -118,6 +118,16 @@
 			}
 		});
 
+
+		var adjustMessageListScroll = function(){
+			var messagesWrapper = $(".messages-wrapper")[0];
+			
+			if(( (messagesWrapper.scrollTop + messagesWrapper.clientHeight) / messagesWrapper.scrollHeight >= 0.8) 
+				|| messagesWrapper.scrollTop === 0){
+				messagesWrapper.scrollTop = messagesWrapper.scrollHeight;
+			}
+		};
+
 		chatAPI.onMessage = function(message){
 			$(".messages").append(
 				templates.chatMessage({
@@ -127,6 +137,8 @@
 					labelClass : tools.getRandomListElement(["label-default","label-primary","label-success","label-info","label-warning","label-danger"])
 				})
 			);
+
+			adjustMessageListScroll();
 		};
 
 		chatAPI.onStats = function(stats){
