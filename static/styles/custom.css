@@ -134,3 +134,16 @@ label.error {
   overflow: hidden;
   padding-left: 15px;
 }
+
+.avatar-wrapper {
+  height:1px;
+}
+
+.chat-message-wrapper {
+  padding-left: 43px;
+  margin-top: -3px;
+}
+
+.chat-message-wrapper p {
+  padding-top:5px;
+}

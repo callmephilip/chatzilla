@@ -117,15 +117,12 @@
 
 	<script id="temlate-chat-message" type="text/template">
 		<li class="list-group-item">
-			<div class="row">
-				<div class="col-md-12 text-left" style="padding-bottom:10px;">
-					<span class="label {{labelClass}}">{{author}} says</span>
-				</div>
+			<div class="avatar-wrapper">
+				<img width="32px" height="32px" src="{{avatarUrl}}">
 			</div>
-			<div class="row">
-				<div class="col-md-2 text-left"><img class="img-thumbnail" width="60px" height="60px" src="{{avatarUrl}}">
-				</div>
-				<div class="col-md-10">{{message}}</div>
+			<div class="chat-message-wrapper">
+				<span class="label {{labelClass}}">{{author}} says</span>
+				<p>{{message}}</p>
 			</div>
 		</li>
 	</script>
