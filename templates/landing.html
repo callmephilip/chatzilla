@@ -13,27 +13,25 @@
 	<header>
 		<h1>Welcome to Chatzilla</h1>
 	</header>
+	<section>
+		<form class="join-chat">
+			<label>Type your email to join the chat</label>
+			<input name="email" type="email">
+			<input type="submit" value="Join">
+		</form>
+
+		<form class="compose-message-form" style="display:none;">
+			<textarea name="message" required></textarea>
+			<input type="submit" value="send">
+		</form>
+
+	</section>
 	<footer>
 	</footer>
 
 	<script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+	<script src="http://ajax.aspnetcdn.com/ajax/jquery.validate/1.11.1/jquery.validate.min.js"></script>
 	<script src="{{ url_for('static', filename='scripts/socket.io.min.js') }}"></script>
-	<script>
-		$(function(){
-			console.log("Welcome to Chatzilla");
-			var socket = io.connect('/chat');
-			socket.on('connect', function () {
-				socket.emit('join', 'Bob', function(joined, name){
-					socket.emit('message', 'hello this is ' + name, function(sent){
-						console.log("message sent: ", sent);
-					});
-				});
-			});
-
-			socket.on('message', function(message){
-				alert("got a message: " + message);
-			});
-		});
-	</script>
+	<script src="{{ url_for('static', filename='scripts/chatzilla.js') }}"></script>
 </body>
 </html>
