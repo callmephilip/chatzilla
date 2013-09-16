@@ -51,7 +51,6 @@
 
 	var bindUI = function(){
 
-
 		$(".join-chat").validate({
 			submitHandler: function(form) {
 
@@ -76,14 +75,22 @@
 			}
 		});
 
+		$(".compose-message-form").find("[name='message']").on("keyup",function(e){
+			e = e || event;
+			if (e.keyCode === 13 && !e.ctrlKey) {
+				$(".compose-message-form").submit();
+			}
+			return true;
+		});
+
 		$(".compose-message-form").validate({
 			submitHandler: function(form) {
 
-				$(".compose-message-form").find(".btn").attr("disabled","disabled");
+				$(".compose-message-form").find("[name='message']").attr("disabled","disabled");
 
 				chatAPI.sendMessage($(form).find("[name='message']").val(), function(sent,message){
 					if(sent){
-						$(".compose-message-form").find(".btn").removeAttr("disabled");
+						$(".compose-message-form").find("[name='message']").removeAttr("disabled");
 						$(".compose-message-form").find("textarea").val("");
 						$(".messages").append(
 							templates.chatMessage({
