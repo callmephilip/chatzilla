@@ -828,4 +828,11 @@ Commit what you have. And push what you have to heroku.
 git push heroku master
 ```
 
+### Before you panic
+
+All the code for chapter 3 is [here](https://github.com/callmephilip/chatzilla/releases/tag/v0.3) if you need it.
+
+
+## Chapter 4: And then this happened
+
 

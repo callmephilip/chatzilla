@@ -30,6 +30,9 @@
 
 		$(".join-chat").validate({
 			submitHandler: function(form) {
+
+				$(".join-chat").find(".btn").attr("disabled","disabled");
+
 				chatAPI.join($(form).find("[name='email']").val(), function(joined, name){
 					if(joined){
 						alert("You've joined Chatzilla");
@@ -38,6 +41,10 @@
 						$(".messages").show();
 					}
 				});
+			},
+
+			invalidHandler: function(event, validator){
+				$("[name='email']").parent().addClass("has-error");
 			}
 		});
 
