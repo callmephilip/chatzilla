@@ -1,7 +1,8 @@
 /* Space out content a bit */
-body {
-  padding-top: 20px;
-  padding-bottom: 20px;
+body, html {
+  overflow: hidden;
+  height: 100%;
+  background-image:url('../images/p4.png');
 }
 
 /* Everything but the jumbotron gets side spacing for mobile first views */
@@ -29,6 +30,11 @@ body {
   padding-top: 19px;
   color: #777;
   border-top: 1px solid #e5e5e5;
+}
+
+.container {
+  position: relative;
+  height: 100%;
 }
 
 /* Customize container */
@@ -83,3 +89,48 @@ body {
 label.error {
   display: none !important;
 } 
+
+
+/* landing */
+
+.splash {
+  background-color: #ccc; /* url('http://placehold.it/730x500/#000'); */
+  background-repeat: no-repeat;
+  min-height: 500px;
+  position: relative;
+}
+
+.overlay {
+  padding: 40px;
+  background-color: rgba(255,255,255,0.4);
+}
+
+.overlay h1 {
+  text-shadow: 0 1px 0 rgba(0,0,0,.15);
+  font-size: 100px;
+  font-weight: 500;
+  color: #fff;
+}
+
+.overlay p.lead {
+  padding-left: 0.5em;
+}
+
+.chat-panel {
+  -webkit-transform : translate(1000%,0);
+  -moz-transform : translate(1000%,0);
+  position: absolute;
+  width: 100%;
+  bottom: 0;
+}
+
+.messages-wrapper {
+  -webkit-transform : translate(-1000%,0); 
+  -moz-transform : translate(-1000%,0);
+  position: absolute;
+  bottom: 185px;
+  left: 0;
+  width: 102%;
+  overflow: hidden;
+  padding-left: 15px;
+}
