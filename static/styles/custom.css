@@ -148,22 +148,42 @@ label.error {
 .chat-panel {
   -webkit-transform : translate(1000%,0);
   -moz-transform : translate(1000%,0);
-  position: absolute;
+  position: fixed;
   width: 100%;
   bottom: 0;
+  margin-bottom: 0;
+}
+
+@media screen and (min-width: 1200px) {
+  .chat-panel {
+    max-width: 1170px;
+  }
+}
+
+@media screen and (min-width: 992px) {
+  .chat-panel {
+    max-width: 970px;
+  }
+}
+
+@media screen and (min-width: 768px) {
+  .chat-panel {
+    max-width: 730px;
+  }
 }
 
 .messages-wrapper {
-  -webkit-transform : translate(-1000%,0); 
-  -moz-transform : translate(-1000%,0);
+  -webkit-transform: translate(-1000%,0);
+  -moz-transform: translate(-1000%,0);
   position: absolute;
-  bottom: 157px;
+  top: 42px;
   left: 0;
   width: 102%;
-  overflow: hidden;
   padding-left: 15px;
-  max-height: 80%;
-  overflow:scroll; 
+}
+
+.messages {
+  padding-top: 138px;
 }
 
 .avatar-wrapper {
@@ -232,4 +252,14 @@ img {
 
 .gist-wrapper {
   margin-top: 1em;
+}
+
+
+.reverseOrder,
+.reverseOrder > .child {
+    -webkit-transform: rotate(180deg);
+       -moz-transform: rotate(180deg);
+        -ms-transform: rotate(180deg);
+         -o-transform: rotate(180deg);
+            transform: rotate(180deg);
 }
