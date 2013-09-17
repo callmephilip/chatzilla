@@ -27,9 +27,9 @@ h1, h2, h3 ,h4 {
 .logo {
   position: relative;
   top: 3px;
-  left: -50px;
-  height: 129px;
-  width: 129px;
+  left: -40px;
+  height: 110px;
+  width: 110px;
   display: inline-block;
   background-image: url('../images/chatzilla-logo.png');
   background-repeat: no-repeat;
@@ -77,11 +77,13 @@ h1, h2, h3 ,h4 {
 }
 
 /* Supporting marketing content */
-.marketing {
-  margin: 40px 0;
-}
+
 .marketing p + h4 {
   margin-top: 28px;
+}
+
+.marketing .row {
+  margin: 0;
 }
 
 /* Responsive: Portrait tablets and up */
@@ -119,10 +121,11 @@ label.error {
   position: relative;
   color: #e7e7e7;
   box-shadow: 0px 0px 4px 1px rgba(51,51,51, 0.5);
+  border-radius: 0 0 4px 4px;
 }
 
 .overlay {
-  padding: 40px;
+  padding: 30px 40px 20px 40px;
   /** background-color: rgba(255,255,255,0.4);  **/
 }
 
@@ -141,8 +144,8 @@ label.error {
 }
 
 .join-chat {
-  padding-top: 2em;
-  padding-bottom: 2em;
+  padding-top: 1.5em;
+  padding-bottom: 1.5em;
 }
 
 .chat-panel {
@@ -251,7 +254,11 @@ img {
 }
 
 .gist-wrapper {
-  margin-top: 1em;
+  margin: 0;
+}
+
+.gist-wrapper h4 {
+  margin-top: 28px;
 }
 
 
@@ -262,4 +269,17 @@ img {
         -ms-transform: rotate(180deg);
          -o-transform: rotate(180deg);
             transform: rotate(180deg);
+}
+
+.footer {
+  text-align: center;
+  margin-top: 10px;
+  padding: 0;
+  border: none;
+  color: #bbb;
+}
+
+.footer p {
+  margin: 0;
+  font-size: 12px;
 }
