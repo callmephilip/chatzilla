@@ -53,6 +53,10 @@
 
 		sendMessage : function(message, onSent) {
 			this.socket.emit('message', message, onSent);
+		},
+
+		disconnect : function(){
+			this.socket.disconnect();
 		}
 
 	};	
@@ -70,6 +74,10 @@
 				})
 			);
 		};
+
+		$(window).unload(function() {
+			chatAPI.disconnect();
+		});
 
 		$(".join-chat").validate({
 			submitHandler: function(form) {
@@ -107,7 +115,6 @@
 
 		$(".compose-message-form").validate({
 			submitHandler: function(form) {
-
 				$(".compose-message-form").find("[name='message']").attr("disabled","disabled");
 
 				chatAPI.sendMessage($(form).find("[name='message']").val(), function(sent,message){
