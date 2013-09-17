@@ -7,7 +7,8 @@
 
 
 	var globals = {
-		myPicture : null
+		myPicture : null,
+		myEmail : null
 	};
 
 	var tools = {
@@ -58,6 +59,18 @@
 
 	var bindUI = function(){
 
+		var displayChatMessage = function(message){
+			$(".messages").append(
+				templates.chatMessage({
+					author : message.sender === globals.myEmail ? "Me" : message.sender,
+					time : moment(message.sent).format("H:mm"),
+					message : message.content,
+					avatarUrl : globals.myPicture,
+					labelClass : tools.getRandomListElement(["label-default","label-primary","label-success","label-info","label-warning","label-danger"])
+				})
+			);
+		};
+
 		$(".join-chat").validate({
 			submitHandler: function(form) {
 
@@ -69,6 +82,7 @@
 
 				chatAPI.join(email, function(joined, name){
 					if(joined){
+						globals.myEmail = email;
 						$(form).hide();
 						$(".chat-panel").addClass("animated slideInRight");
 						$(".messages-wrapper").addClass("animated slideInLeft");
@@ -100,16 +114,7 @@
 					if(sent){
 						$(".compose-message-form").find("[name='message']").removeAttr("disabled");
 						$(".compose-message-form").find("textarea").val("");
-						$(".messages").append(
-							templates.chatMessage({
-								author : "Me",
-								time : moment(message.sent).format("H:mm"),
-								message : message.content,
-								avatarUrl : globals.myPicture,
-								labelClass : tools.getRandomListElement(["label-default","label-primary","label-success","label-info","label-warning","label-danger"])
-							})
-						);
-
+						displayChatMessage(message);
 					}
 				});
 			},
@@ -120,15 +125,7 @@
 		});
 
 		chatAPI.onMessage = function(message){
-			$(".messages").append(
-				templates.chatMessage({
-					author : message.sender,
-					time : moment(message.sent).format("H:mm"),
-					message : message.content,
-					avatarUrl : tools.getGravatarUrl(message.sender),
-					labelClass : tools.getRandomListElement(["label-default","label-primary","label-success","label-info","label-warning","label-danger"])
-				})
-			);
+			displayChatMessage(message);
 		};
 
 		chatAPI.onStats = function(stats){
