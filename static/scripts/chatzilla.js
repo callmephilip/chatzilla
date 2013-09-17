@@ -65,7 +65,7 @@
 					author : message.sender === globals.myEmail ? "Me" : message.sender,
 					time : moment(message.sent).format("H:mm"),
 					message : message.content,
-					avatarUrl : globals.myPicture,
+					avatarUrl : tools.getGravatarUrl(message.sender),
 					labelClass : tools.getRandomListElement(["label-default","label-primary","label-success","label-info","label-warning","label-danger"])
 				})
 			);
