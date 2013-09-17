@@ -199,6 +199,14 @@ label.error {
   padding-top:5px;
 }
 
+.time {
+  position: absolute;
+  right: 0;
+  top: 0;
+  padding: 10px;
+  color: #ccc;
+}
+
 .stats-bar {
   position: absolute;
   left: 0;

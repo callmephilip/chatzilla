@@ -3,6 +3,7 @@ from flask import Flask, Response, render_template, request
 from socketio import socketio_manage
 from socketio.namespace import BaseNamespace
 from socketio.mixins import BroadcastMixin
+from time import time
 
 monkey.patch_all()
 
@@ -50,8 +51,13 @@ class ChatNamespace(BaseNamespace, BroadcastMixin):
         return True, email
 
     def on_message(self, message):
+        message_data = {
+            "sender" : self.session["email"],
+            "content" : message,
+            "sent" : time()*1000 #ms
+        }
         self.broadcast_event_not_me("message",{ "sender" : self.session["email"], "content" : message})
-        return True, message
+        return True, message_data
 
 
 

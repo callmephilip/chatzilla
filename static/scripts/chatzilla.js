@@ -103,7 +103,8 @@
 						$(".messages").append(
 							templates.chatMessage({
 								author : "Me",
-								message : message,
+								time : moment(message.sent).format("H:mm"),
+								message : message.content,
 								avatarUrl : globals.myPicture,
 								labelClass : tools.getRandomListElement(["label-default","label-primary","label-success","label-info","label-warning","label-danger"])
 							})
@@ -122,6 +123,7 @@
 			$(".messages").append(
 				templates.chatMessage({
 					author : message.sender,
+					time : moment(message.sent).format("H:mm"),
 					message : message.content,
 					avatarUrl : tools.getGravatarUrl(message.sender),
 					labelClass : tools.getRandomListElement(["label-default","label-primary","label-success","label-info","label-warning","label-danger"])
