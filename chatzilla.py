@@ -50,7 +50,6 @@ class ChatNamespace(BaseNamespace, BroadcastMixin):
         return True, email
 
     def on_message(self, message):
-        self.log('got a message: %s' % message)
         self.broadcast_event_not_me("message",{ "sender" : self.session["email"], "content" : message})
         return True, message
 
