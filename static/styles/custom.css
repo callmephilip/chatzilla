@@ -1,6 +1,6 @@
 /* Space out content a bit */
 body, html {
-  overflow: hidden;
+  overflow-x: hidden;
   height: 100%;
   background-image:url('../images/p4.png');
   font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif; 
@@ -117,7 +117,6 @@ label.error {
   background-repeat: no-repeat;
   min-height: 500px;
   position: relative;
-  border-radius: 0px 0px 5px 5px;
   color: #e7e7e7;
   box-shadow: 0px 0px 4px 1px rgba(51,51,51, 0.5);
 }
@@ -139,6 +138,11 @@ label.error {
 
 .overlay p.lead {
   padding-left: 0.5em;
+}
+
+.join-chat {
+  padding-top: 2em;
+  padding-bottom: 2em;
 }
 
 .chat-panel {
@@ -224,4 +228,8 @@ img {
   background-color: #373b44;
   border-color: #373b44;
   box-shadow: 0px 0px 4px 1px rgba(51,51,51, 0.5);
+}
+
+.gist-wrapper {
+  margin-top: 1em;
 }
