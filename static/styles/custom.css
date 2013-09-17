@@ -183,6 +183,7 @@ label.error {
   left: 0;
   width: 102%;
   padding-left: 15px;
+  margin-top: 10px;
 }
 
 .messages {
@@ -282,4 +283,13 @@ img {
 .footer p {
   margin: 0;
   font-size: 12px;
+}
+
+
+.list-group-item:first-child {
+  border-radius: 0 0 4px 4px;
+}
+
+.list-group-item:last-child {
+  border-radius: 4px 4px 0 0;
 }
