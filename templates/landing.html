@@ -9,7 +9,6 @@
 	<meta http-equiv="cache-control" content="no-cache" />
 	<title>Chatzilla</title>
 	<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css">
-	<!-- Optional theme -->
 	<link rel="stylesheet" href="{{ url_for('static', filename='styles/custom.css') }}">
 	<link rel="stylesheet" href="{{ url_for('static', filename='styles/animate.min.css') }}">
 	<link href='http://fonts.googleapis.com/css?family=Arvo:400,700' rel='stylesheet' type='text/css'>
@@ -26,7 +25,6 @@
 				<h1>Chatzilla</h1><div class="logo"></div>
 				<form class="form-inline join-chat" role="form">
 					<div class="input-group input-group-lg">
-						<span class="input-group-addon">@</span>
 						<input name="email" type="email" class="form-control input-lg" placeholder="email address" required>
 						<span class="input-group-btn">
 							<button class="btn btn-success" type="submit button">Chat</button>
@@ -97,9 +95,9 @@
 
 	<!-- Latest compiled and minified JavaScript -->
 	<script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
-	<script src="{{ url_for('static', filename='scripts/md5.js') }}"></script>
-	<script src="{{ url_for('static', filename='scripts/socket.io.min.js') }}"></script>
-	<script src="{{ url_for('static', filename='scripts/handlebars.js') }}"></script>
+	<script src="{{ url_for('static', filename='scripts/vendor/md5.js') }}"></script>
+	<script src="{{ url_for('static', filename='scripts/vendor/socket.io.min.js') }}"></script>
+	<script src="{{ url_for('static', filename='scripts/vendor/handlebars.js') }}"></script>
 	<script src="{{ url_for('static', filename='scripts/chatzilla.js') }}"></script>
 
 	{% raw %}

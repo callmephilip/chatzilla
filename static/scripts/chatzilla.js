@@ -130,8 +130,6 @@
 		};
 
 		chatAPI.onStats = function(stats){
-			console.log("got stats", stats);
-
 			stats.peopleCount = stats.people.length;
 			for(var i=0; i<stats.people.length; i++){
 				stats.people[i] = {
