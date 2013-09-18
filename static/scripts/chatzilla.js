@@ -45,6 +45,10 @@
 					that.onStats(stats);
 				}
 			});
+
+			this.socket.on('debug', function(message){
+				console.info(message);
+			});
 		},
 
 		join : function(email, onJoin){

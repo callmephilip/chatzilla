@@ -36,6 +36,9 @@ class ChatNamespace(BaseNamespace, BroadcastMixin):
         
         if self.session.has_key("email"):
             email = self.session['email']
+
+            self.broadcast_event_not_me("debug", "%s left" % email)
+            
             self.stats["people"] = filter(lambda e : e != email, self.stats["people"])
             self.report_stats()
 
