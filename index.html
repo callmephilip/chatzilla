@@ -32,6 +32,17 @@
 
 <p>This is a step by step tutorial on building a basic real time chat application using <a href="http://flask.pocoo.org/">Flask</a>, <a href="http://socket.io/">socket.io</a> and <a href="https://github.com/abourget/gevent-socketio">gevent-socketio</a>. All the code is available <a href="https://github.com/callmephilip/chatzilla">here</a>. You can find live version of the app <a href="chatzilla.herokuapp.com">here</a>.   </p>
 
+<blockquote>
+<p>As of Oct 8 2013, Heroku rolled out Public Beta of Websockets. The official announcement can be found <a href="https://blog.heroku.com/archives/2013/10/8/websockets-public-beta">here</a>. </p>
+</blockquote>
+
+<p>If you don't enable Websocket functionality on Heroku, Socket.io will fallback to XHR polling.</p>
+
+<p>To enable websockets on your Heroku app, use the following command</p>
+
+<pre><code>heroku labs:enable websockets -a YOUR-APP-NAME
+</code></pre>
+
 <h2>
 <a name="chapter-1-getting-started" class="anchor" href="#chapter-1-getting-started"><span class="octicon octicon-link"></span></a>Chapter 1: Getting started</h2>
 
