@@ -1,9 +1,9 @@
 # Realtime chat with Flask and Heroku 
 
 
-This is a step by step tutorial on building a basic real time chat application using [Flask](http://flask.pocoo.org/), [socket.io](http://socket.io/) and [gevent-socketio](https://github.com/abourget/gevent-socketio). All the code is available [here](https://github.com/callmephilip/chatzilla). You can find live version of the app [here](chatzilla.herokuapp.com).   
+This is a step by step tutorial on building a basic real time chat application using [Flask](http://flask.pocoo.org/), [socket.io](http://socket.io/) and [gevent-socketio](https://github.com/abourget/gevent-socketio). All the code is available [here](https://github.com/callmephilip/chatzilla). You can find live version of the app [here](http://chatzilla.herokuapp.com).   
 
-
+[![Chatzilla screen](https://dl.dropboxusercontent.com/u/9224326/www/chatzilla.screen.png)](http://chatzilla.herokuapp.com)
 
 > As of Oct 8 2013, Heroku rolled out Public Beta of Websockets. The official announcement can be found [here](https://blog.heroku.com/archives/2013/10/8/websockets-public-beta). 
 
