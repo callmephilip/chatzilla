@@ -44,6 +44,16 @@ git remote add heroku git@heroku.com:<YOUR_APP_NAME>.git
 
 We now have an empty git repository with a remote aliased 'heroku' pointing to the Heroku git for the project. The game is afoot. 
 
+> As of Oct 8 2013, Heroku rolled out Public Beta of Websockets. The official announcement can be found [here](https://blog.heroku.com/archives/2013/10/8/websockets-public-beta). 
+
+If you don't enable Websocket functionality on Heroku, Socket.io will fallback to XHR polling.
+
+To enable websockets on your Heroku app, use the following command
+
+```
+heroku labs:enable websockets -a YOUR-APP-NAME
+``` 
+
 ### Setup basic Flask app
 
 #### Virtual environment
